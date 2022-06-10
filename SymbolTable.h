@@ -119,17 +119,17 @@ public:
         return sym;
     }
 
-    void printCurrentScope() {
+    void printCurrentScope(std::ostream &out) {
         if (cur == nullptr) {
             #ifdef VERBOSE
             std::cout << "NO CURRENT SCOPE TO PRINT" << std::endl;
             #endif
             return;
         }
-        cur->print();
+        cur->print(out);
     }
 
-    void printAllScopes() {
+    void printAllScopes(std::ostream &out) {
         if (cur == nullptr) {
             #ifdef VERBOSE
             std::cout << "NO SCOPES TO PRINT" << std::endl;
@@ -138,9 +138,10 @@ public:
         }
         ScopeTable *ptr = cur;
         while (ptr != nullptr) {
-            ptr->print();
+            ptr->print(out);
             ptr = ptr->getParentScope();
         }
+        out<<std::endl;
     }
 };
 

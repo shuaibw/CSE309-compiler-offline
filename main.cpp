@@ -8,9 +8,9 @@
  * */
 
 //Comment/uncomment to toggle the effects
-#define VERBOSE //Activate logs
-#define FILEOUT //Redirect std::cout to file
-#define FILEIN //Redirect std::cin to file
+// #define VERBOSE //Activate logs
+// #define FILEOUT //Redirect std::cout to file
+// #define FILEIN //Redirect std::cin to file
 
 #include<iostream>
 #include<fstream>

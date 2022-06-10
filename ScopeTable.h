@@ -202,19 +202,18 @@ public:
         return true;
     }
 
-    void print() const {
-        std::cout << "ScopeTable# " << id << std::endl;
-        std::cout << "--------------------" << std::endl;
+    void print(std::ostream &out) const {
+        out << "ScopeTable # " << id << std::endl;
         for (size_t i = 0; i < N; i++) {
-            std::cout << i << " --> ";
             SymbolInfo *cur = symbols[i];
+            if(cur==nullptr) continue;
+            out << i << " --> ";
             while (cur != nullptr) {
-                std::cout << *cur;
+                out << *cur;
                 cur = cur->getNext();
             }
-            std::cout << std::endl;
+            out << std::endl;
         }
-        std::cout << "--------------------" << std::endl;
     }
 
     size_t getChildCount() const {
