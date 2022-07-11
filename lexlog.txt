@@ -1,4 +1,21 @@
-Line no 1: Token <ADDOP> Lexeme + found
+Line no 1: Token <ID> Lexeme ch found
 
-Line no 1: Token <ADDOP> Lexeme + found
+ScopeTable # 1
+1 --> < ch : ID >
 
+Line no 1: Token <ASSIGNOP> Lexeme = found
+
+Line no 1: Token <CONST_CHAR> Lexeme '\t' found --> <CONST_CHAR, 	>
+
+ScopeTable # 1
+1 --> < ch : ID >
+5 --> < '\t' : CONST_CHAR >
+
+Line no 1: Token <SEMICOLON> Lexeme ; found
+
+ScopeTable # 1
+1 --> < ch : ID >
+5 --> < '\t' : CONST_CHAR >
+
+Total lines: 1
+Total errors: 0

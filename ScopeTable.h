@@ -98,7 +98,7 @@ public:
         return parentScope;
     }
 
-    bool insertSymbol(const std::string &name, const std::string &type) {
+    bool insertSymbol(const std::string &name, const std::string &type, std::ostream &out) {
         size_t pos{0};
         size_t idx = sdbmHash(name.c_str()) % N;
         SymbolInfo *cur{symbols[idx]};
@@ -106,12 +106,10 @@ public:
         while (cur != nullptr) {
             if (cur->getName() == name) {
 
-                #ifdef VERBOSE
-                std::cout << *cur
-                          << " already exists in ScopeTable# " << id
-                          << " at position " << idx << ", " << pos
-                          << std::endl;
-                #endif
+                out << *cur
+                << " already exists in ScopeTable# " << id
+                << " at position " << idx << ", " << pos
+                << std::endl << std::endl;
 
                 return false;
             }

@@ -91,9 +91,9 @@ public:
         cur = parent;
     }
 
-    bool insert(const std::string &name, const std::string &type) {
+    bool insert(const std::string &name, const std::string &type, std::ostream &out) {
         if (cur == nullptr) cur = new ScopeTable(nullptr, 1, N);
-        return cur->insertSymbol(name, type);
+        return cur->insertSymbol(name, type, out);
     }
 
     bool remove(const std::string &name) {

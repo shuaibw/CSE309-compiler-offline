@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+#usage: ./lexrunner.sh lex.l lexinput.txt
+#output in lextok.txt, lexlog.txt
 if [[ $# -eq 0 ]]; then
     echo "Usage: ./lexrunner.sh"
     exit 1
