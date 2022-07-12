@@ -1,1 +1,1 @@
-<ID, ch> <ASSIGNOP, => <CONST_CHAR, 	> <SEMICOLON, ;> 
+<INT> <ID, x> <SEMICOLON, ;> 

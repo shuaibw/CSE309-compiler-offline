@@ -1,0 +1,8 @@
+Line 1: type_specifier : INT
+
+int
+
+ScopeTable # 1
+
+Total number of lines: 1
+Total number of errors: 0

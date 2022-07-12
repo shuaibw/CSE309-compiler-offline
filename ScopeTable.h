@@ -39,7 +39,7 @@
  * 4 --> < 32 : NUM >
  */
 
-uint32_t sdbmHash(const char *p) {
+inline uint32_t sdbmHash(const char *p) {
     uint32_t hash = 0;
     auto *str = (unsigned char *) p;
     int c{};

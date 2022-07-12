@@ -5,7 +5,6 @@
 #include "SymbolInfo.h"
 #include "SymbolTable.h"
 #include "ScopeTable.h"
-#include "parserutil.h"
 
 extern int yylineno;
 extern FILE* yyin;
@@ -17,14 +16,13 @@ ofstream plo(PARSER_LOG_FILE, ios::out); // parser log out
 ofstream peo(PARSER_ERR_FILE, ios::out); // parser error out
 ofstream llo(LEX_LOG_FILE, ios::out); // lex log out
 ofstream lto(LEX_TOKEN_FILE, ios::out); // lex token out
-int err_count = 0;
-SymbolTable sym_tab(7);
+int error_count = 0;
+const int BUCKET = 7;
+SymbolTable sym_tab(BUCKET);
 
 
 void yyerror(char *s){
-	plo << "Error at line "<< yylineno << ": " << s << "\n" << endl;
-    peo << "Error at line "<< yylineno << ": " << s << "\n" << endl;
-    err_count++;
+	printf("%s\n",s);
 }
 
 int yylex(void);
@@ -32,22 +30,24 @@ int yyparse(void);
 
 %}
 
+%error-verbose
 %union {
     SymbolInfo* sym_info;
-    struct putil* pt;
+    putil* pt;
 }
-
 %token IF INT FLOAT VOID ELSE FOR WHILE DO BREAK CHAR DOUBLE RETURN SWITCH CASE DEFAULT CONTINUE PRINTLN INCOP DECOP ASSIGNOP NOT LPAREN RPAREN LCURL RCURL LTHIRD RTHIRD COMMA SEMICOLON
 %token <sym_info> ID ADDOP MULOP RELOP LOGICOP CONST_INT CONST_FLOAT ERRFLT 
 %type <pt>  start program unit variable var_declaration type_specifier func_declaration func_definition parameter_list
 %type <pt>  expression factor unary_expression term simple_expression rel_expression statement statements compound_statement logic_expression expression_statement
 %type <pt> arguments argument_list declaration_list
-
+%destructor {
+    delete ($$);
+} <sym_info>
 
 %%
 start               :   program
 {
-    print_parser_grammar("start", "program");
+    print_parser_grammer("start", "program");
     $$ = new putil();
     $$->data = $1->data;
     delete $1;
@@ -56,8 +56,8 @@ program             :   program unit
 {
     $$ = new putil();
     $$->data = $1->data + "\n" + $2->data;
-    print_parser_grammar("program", "program unit");
-    print_parser_text($$->data);
+    print_parser_grammer("program", "program unit");
+    print_parser_text($$->text);
     delete $1;
     delete $2;
 }
@@ -66,7 +66,7 @@ program             :   program unit
     $$ = new putil();
     $$->data = $1->data;
     print_parser_grammar("program", "unit");
-    print_parser_text($$->data);
+    print_parser_text($$->text);
     delete $1;
 }
                     ;
@@ -75,7 +75,7 @@ unit                :   var_declaration
     $$ = new putil();
     $$->data = $1->data;
     print_parser_grammar("unit", "var_declaration");
-    print_parser_text($$->data);
+    print_parser_text($$->text);
     delete $1;
 }
                     |   func_declaration
@@ -83,7 +83,7 @@ unit                :   var_declaration
     $$ = new putil();
     $$->data = $1->data;
     print_parser_grammar("unit", "func_declaration");
-    print_parser_text($$->data);
+    print_parser_text($$->text);
     delete $1;
 }
                     |   func_definition
@@ -91,7 +91,7 @@ unit                :   var_declaration
     $$ = new putil();
     $$->data = $1->data;
     print_parser_grammar("unit", "func_definition");
-    print_parser_text($$->data);
+    print_parser_text($$->text);
     delete $1;
 }
                     ;
@@ -133,12 +133,11 @@ type_specifier      :   INT
 }
                     |   VOID
 {
-    print_parser_grammar("type_specifier", "VOID)");
+    print_parser_grammar("type_specifier", "VOID");
     $$ = new putil();
     $$->data = "void";
     print_parser_text($$->data);
 }
-                    ;
                     ;
 declaration_list    :   declaration_list COMMA ID
                     |   declaration_list COMMA ID LTHIRD CONST_INT RTHIRD
@@ -166,75 +165,22 @@ variable            :   ID
     print_parser_grammar("variable", "ID");
     $$ = new putil();
     $$->data = $1->getName();
-    SymbolInfo *ret = sym_tab.lookUp($1->getName());
+    SymbolInfo *ret = sym_tab.lookup($1->getName());
     if(ret == nullptr){
-        err_count++;
+        error_count++;
         print_undecl_var($1->getName());
         $$->type="ERR";
     }else{
-        $$->type = ret->getType();
+        $$->type=
     }
-    print_parser_text($$->data);
-    delete $1;
 }
                     |   ID LTHIRD expression RTHIRD
-{
-    print_parser_grammar("variable", "ID LTHIRD expression RTHIRD");
-    $$ = new putil();
-    $$->data = $1->getName() + "[" + $3->data + "]";
-    SymbolInfo *ret = sym_tab.lookUp($1->getName());
-    if(ret == nullptr){
-        err_count++;
-        print_undecl_var($1->getName());
-        $$->type="ERR";
-    }else{
-        $$->type = ret->getType();
-    }
-    print_parser_text($$->data);
-    delete $1;
-    delete $3;
-}
                     ;
-expression          :   logic_expression
-{
-    print_parser_grammar("expression", "logic_expression");
-    $$ = new putil();
-    $$->data = $1->data;
-    $$->type = $1->type;
-    print_parser_text($$->data);
-    delete $1;
-}
-                    |   variable ASSIGNOP logic_expression
-{
-    print_parser_grammar("expression", "variable ASSIGNOP logic_expression");
-    $$ = new putil();
-    $$->data = $1->data + " = " + $3->data;
-    $$->type = $3->type;
-    print_parser_text($$->data);
-    delete $1;
-    delete $3;
-}
+expression          :   logic expression
+                    |   variable ASSIGNOP logic expression
                     ;
 logic_expression    :   rel_expression
-{
-    print_parser_grammar("logic_expression", "rel_expression");
-    $$ = new putil();
-    $$->data = $1->data;
-    $$->type = $1->type;
-    print_parser_text($$->data);
-    delete $1;
-}
                     |   rel_expression LOGICOP rel_expression
-{
-    print_parser_grammar("logic_expression", "rel_expression LOGICOP rel_expression");
-    $$ = new putil();
-    $$->data = $1->data + " " + $2->getName() + " " + $3->data;
-    $$->type = "BOOL";
-    print_parser_text($$->data);
-    delete $1;
-    delete $2;
-    delete $3;
-}
                     ;   
 rel_expression      :   simple_expression
                     |   simple_expression RELOP simple_expression
@@ -265,6 +211,15 @@ arguments           :   arguments COMMA logic_expression
                     ;
 %%
 
+%code requires{
+    
+struct Info{
+    char *name;
+    char *type;
+};
+
+}
+
 main(int argc, char* argv[])
 {
     if(argc != 2){
@@ -278,11 +233,10 @@ main(int argc, char* argv[])
         return 1;
     }
     yyin = fin;
-    yylineno = 1;
     yyparse();
     sym_tab.printAllScopes(plo);
     plo << "Total number of lines: " << yylineno << endl;
-    plo << "Total number of errors: " << err_count << endl;
+    plo << "Total number of errors: " << error_count << endl;
     fclose(fin);
     plo.close();
     peo.close();

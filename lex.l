@@ -9,17 +9,17 @@
     #include<string>
     #include<fstream>
     #include "SymbolTable.h"
+    #include "SymbolInfo.h"
+    #include "y.tab.h"
     using namespace std;
 
     string sbuff;
     string lbuff;
     const int BUCKET = 7;
-    const char* LOG_FILE = "./lexlog.txt";
-    const char* TOKEN_FILE = "./lextok.txt";
     int error_count=0;
-    ofstream log_out(LOG_FILE, ios::out);
-    ofstream tok_out(TOKEN_FILE, ios::out);
-    SymbolTable sym_tab(BUCKET);
+    extern ofstream llo;
+    extern ofstream lto;
+    SymbolTable symb_tab(BUCKET);
 
     char process_charptr(const char* lex){
         char ch;
@@ -62,7 +62,7 @@
     
     
     void print_log(const char* TOK, const char* lex, int line_no){
-        log_out << "Line no " << line_no 
+        llo << "Line no " << line_no 
         << ": Token <" << TOK 
         << "> Lexeme " << lex 
         <<" found" << endl << endl;
@@ -71,21 +71,21 @@
 
     void print_tok(const char* TOK, const char* lex=NULL){
         if(lex!=NULL)
-            tok_out << "<" << TOK
+            lto << "<" << TOK
                  << ", " << lex
                  << "> ";
         else
-            tok_out << "<" << TOK <<"> "; 
+            lto << "<" << TOK <<"> "; 
         return;
     }
 
     void print_char_log(const char* TOK, const char* lex, int line_no){
-        log_out << "Line no " << line_no 
+        llo << "Line no " << line_no 
         << ": Token <" << TOK 
         << "> Lexeme " << lex 
         <<" found";
         char ch = process_charptr(lex);
-        log_out << " --> <" << TOK
+        llo << " --> <" << TOK
                 << ", " << ch
                 << ">" << endl << endl;
         return;
@@ -93,14 +93,14 @@
 
     void print_char_tok(const char* TOK, const char* lex){
         char ch = process_charptr(lex);
-        tok_out << "<" << TOK
+        lto << "<" << TOK
                 << ", " << ch
                 << "> ";
         return;
     }
 
    void print_str_log(const char* TOK, const char* lex, int line_no){
-        log_out << "Line no " << line_no 
+        llo << "Line no " << line_no 
         << ": Token <" << TOK 
         << "> Lexeme " << lbuff 
         <<" found" << " --> <" 
@@ -112,62 +112,62 @@
     }
 
     void print_str_tok(const char* TOK, const char* lex){
-        tok_out << "<" << TOK
+        lto << "<" << TOK
                 << ", " << sbuff 
                 << "> ";
         return;
     }
 
     void logerr_tmdp(){
-        log_out << "Error at line no " << yylineno
+        llo << "Error at line no " << yylineno
                 <<": Too many decimal points "
                 <<yytext<<endl<<endl;
     }
 
     void logerr_flt(){
-        log_out << "Error at line no "<<yylineno
+        llo << "Error at line no "<<yylineno
                 << ": Ill formed number "
                 <<yytext<<endl<<endl;
     }
     void logerr_invs(){
-        log_out << "Error at line no "<<yylineno
+        llo << "Error at line no "<<yylineno
                 << ": Invalid prefix on ID or invalid suffix on Number "
                 << yytext << endl << endl;
     }
     void logerr_mchar(){
-        log_out << "Error at line no "<<yylineno
+        llo << "Error at line no "<<yylineno
                 << ": Multi character constant error "
                 << yytext << endl << endl;
     }
     void logerr_unchar(){
-        log_out << "Error at line no "<<yylineno
+        llo << "Error at line no "<<yylineno
                 << ": Unterminated character "
                 << yytext << endl << endl;
     }
     void logerr_emchar(){
-        log_out << "Error at line no "<<yylineno
+        llo << "Error at line no "<<yylineno
                 << ": Empty character constant error "
                 << yytext << endl << endl;
     }
     void logerr_unstr(const char* str){
-        log_out << "Error at line no "<<yylineno
+        llo << "Error at line no "<<yylineno
                 << ": Unterminated string "
                 << str << endl << endl;
     }
     void logerr_uncmnt(const char* str){
-        log_out << "Error at line no "<<yylineno
+        llo << "Error at line no "<<yylineno
                 << ": Unterminated comment "
                 << str << endl << endl;
     }
     void logerr_unk(){
-        log_out << "Error at line no "<<yylineno
+        llo << "Error at line no "<<yylineno
                 << ": Unrecognized character "
                 << yytext << endl << endl;
     }
     void logdone(){
-        sym_tab.printAllScopes(log_out);
-        log_out << "Total lines: "<<yylineno<<endl;
-        log_out << "Total errors: "<<error_count<<endl;
+        symb_tab.printAllScopes(llo);
+        llo << "Total lines: "<<yylineno<<endl;
+        llo << "Total errors: "<<error_count<<endl;
     }
 
 %}
@@ -184,7 +184,8 @@ INT         {DIGIT}+
 CHAR        '[^"\\""\n"]'|'{ESCSEQ}'
 ADDOP       [+-]
 MULOP       [*/%]
-INCOP       "++"|"--"
+INCOP       "++"
+DECOP       "--"
 RELOP       "<="|">="|"<"|">"|"=="|"!="
 ASSIGNOP    "="|"+="|"-="|"*="|"/="
 LOGICOP     "&&"|"||"
@@ -214,102 +215,121 @@ ERREMCHAR   ''("\n")?
 "if"        {
                 print_tok("IF");
                 print_log("IF", yytext, yylineno);
+                return IF;
             }
 
 "for"       {
                 print_tok("FOR");
                 print_log("FOR", yytext, yylineno);
+                return FOR;
             }
 
 "do"        {
                 print_tok("DO");
                 print_log("DO", yytext, yylineno);
+                return DO;
             }
 
 "int"       {
                 print_tok("INT");
                 print_log("INT", yytext, yylineno);
+                return INT;
             }
 
 "float"     {
                 print_tok("FLOAT");
                 print_log("FLOAT", yytext, yylineno);
+                return FLOAT;
             }
 
 "void"      {
                 print_tok("VOID");
                 print_log("VOID", yytext, yylineno);
+                return VOID;
             }
 
 "switch"    {
                 print_tok("SWITCH");
                 print_log("SWITCH", yytext, yylineno);
+                return SWITCH;
             }
 
 "default"   {
                 print_tok("DEFAULT");
                 print_log("DEFAULT", yytext, yylineno);
+                return DEFAULT;
             }
 
 "else"      {
                 print_tok("ELSE");
                 print_log("ELSE", yytext, yylineno);
+                return ELSE;
             }
 
 "while"     {
                 print_tok("WHILE");
                 print_log("WHILE", yytext, yylineno);
+                return WHILE;
             }
 
 "break"     {
                 print_tok("BREAK");
                 print_log("BREAK", yytext, yylineno);
+                return BREAK;
             }
 
 "char"      {
                 print_tok("CHAR");
                 print_log("CHAR", yytext, yylineno);
+                return CHAR;
             }
         
 "double"    {
                 print_tok("DOUBLE");
                 print_log("DOUBLE", yytext, yylineno);
+                return DOUBLE;
             }
 
 "return"    {
                 print_tok("RETURN");
                 print_log("RETURN", yytext, yylineno);
+                return RETURN;
             }
 
 "case"      {
                 print_tok("CASE");
                 print_log("CASE", yytext, yylineno);
+                return CASE;
             }
 
 "continue"  {
                 print_tok("CONTINUE");
                 print_log("CONTINUE", yytext, yylineno);
+                return CONTINUE;
+            }
+"printf"    {
+                return PRINTLN;
             }
 
 {INT}       {
                 print_tok("CONST_INT", yytext);
                 print_log("CONST_INT", yytext, yylineno);
-                bool inserted = sym_tab.insert(yytext, "CONST_INT", log_out);
-                if (inserted) sym_tab.printAllScopes(log_out);
+                bool inserted = symb_tab.insert(yytext, "CONST_INT", llo);
+                if (inserted) symb_tab.printAllScopes(llo);
             }
 
 {FLOAT}     {
                 print_tok("CONST_FLOAT", yytext);
                 print_log("CONST_FLOAT", yytext, yylineno);
-                bool inserted = sym_tab.insert(yytext, "CONST_FLOAT", log_out);
-                if (inserted) sym_tab.printAllScopes(log_out);
+                bool inserted = symb_tab.insert(yytext, "CONST_FLOAT", llo);
+                if (inserted) symb_tab.printAllScopes(llo);
             }
 
 {CHAR}      {
                 print_char_tok("CONST_CHAR", yytext);
                 print_char_log("CONST_CHAR", yytext, yylineno);
-                bool inserted = sym_tab.insert(yytext, "CONST_CHAR", log_out);
-                if (inserted) sym_tab.printAllScopes(log_out);
+                bool inserted = symb_tab.insert(yytext, "CONST_CHAR", llo);
+                if (inserted) symb_tab.printAllScopes(llo);
             }
 
 {ADDOP}     {
@@ -325,13 +345,18 @@ ERREMCHAR   ''("\n")?
 {ID}        {
                 print_tok("ID", yytext);
                 print_log("ID", yytext, yylineno);
-                bool inserted = sym_tab.insert(yytext, "ID", log_out);
-                if (inserted) sym_tab.printAllScopes(log_out);
+                bool inserted = symb_tab.insert(yytext, "ID", llo);
+                if (inserted) symb_tab.printAllScopes(llo);
             }
 
 {INCOP}     {
                 print_tok("INCOP", yytext);
                 print_log("INCOP", yytext, yylineno);
+            }
+
+{DECOP}     {
+                print_tok("DECOP", yytext);
+                print_log("DECOP", yytext, yylineno);
             }
             
 {RELOP}     {
@@ -367,13 +392,13 @@ ERREMCHAR   ''("\n")?
 {LCURL}     {
                 print_tok("LCURL", yytext);
                 print_log("LCURL", yytext, yylineno);
-                sym_tab.enterScope();
+                symb_tab.enterScope();
             }
 
 {RCURL}     {
                 print_tok("RCURL", yytext);
                 print_log("RCURL", yytext, yylineno);
-                sym_tab.exitScope();
+                symb_tab.exitScope();
             }
 
 {LTHIRD}    {
@@ -537,22 +562,3 @@ ERREMCHAR   ''("\n")?
                 return 0;
             }
 %%
-
-int main(int argc, char*argv[]){
-    if(argc != 2){
-        cout<<"No input file provided"<<endl;
-        return 1;
-    }
-
-    FILE *fin = fopen(argv[1], "r");
-    if(fin==NULL){
-        cout<<"Error opening file"<<endl;
-        return 1;
-    }
-
-    yyin = fin;
-    yylineno = 1;
-    yylex();
-    fclose(fin);
-    return 0;
-}
