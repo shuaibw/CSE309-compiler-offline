@@ -19,7 +19,9 @@
     int error_count=0;
     extern ofstream llo;
     extern ofstream lto;
-    SymbolTable symb_tab(BUCKET);
+    extern ofstream peo;
+    extern ofstream plo;
+    extern SymbolTable sym_tab;
 
     char process_charptr(const char* lex){
         char ch;
@@ -165,7 +167,7 @@
                 << yytext << endl << endl;
     }
     void logdone(){
-        symb_tab.printAllScopes(llo);
+        sym_tab.printAllScopes(llo);
         llo << "Total lines: "<<yylineno<<endl;
         llo << "Total errors: "<<error_count<<endl;
     }
@@ -314,27 +316,29 @@ ERREMCHAR   ''("\n")?
 {INT}       {
                 print_tok("CONST_INT", yytext);
                 print_log("CONST_INT", yytext, yylineno);
-                bool inserted = symb_tab.insert(yytext, "CONST_INT", llo);
-                if (inserted) symb_tab.printAllScopes(llo);
+                yylval.sym_info = new SymbolInfo(yytext, "CONST_INT");
+                return CONST_INT;
             }
 
 {FLOAT}     {
                 print_tok("CONST_FLOAT", yytext);
                 print_log("CONST_FLOAT", yytext, yylineno);
-                bool inserted = symb_tab.insert(yytext, "CONST_FLOAT", llo);
-                if (inserted) symb_tab.printAllScopes(llo);
+                yylval.sym_info = new SymbolInfo(yytext, "CONST_FLOAT");
+                return CONST_FLOAT;
             }
 
 {CHAR}      {
                 print_char_tok("CONST_CHAR", yytext);
                 print_char_log("CONST_CHAR", yytext, yylineno);
-                bool inserted = symb_tab.insert(yytext, "CONST_CHAR", llo);
-                if (inserted) symb_tab.printAllScopes(llo);
+                yylval.sym_info = new SymbolInfo(yytext, "CONST_CHAR");
+                return CONST_CHAR;
             }
 
 {ADDOP}     {
                 print_tok("ADDOP", yytext);
                 print_log("ADDOP", yytext, yylineno);
+                yylval.op = strdup(yytext);
+                return ADDOP;
             }
 
 {MULOP}     {
@@ -345,80 +349,98 @@ ERREMCHAR   ''("\n")?
 {ID}        {
                 print_tok("ID", yytext);
                 print_log("ID", yytext, yylineno);
-                bool inserted = symb_tab.insert(yytext, "ID", llo);
-                if (inserted) symb_tab.printAllScopes(llo);
+                yylval.sym_info = new SymbolInfo(yytext, "ID");
+                return ID;
             }
 
 {INCOP}     {
                 print_tok("INCOP", yytext);
                 print_log("INCOP", yytext, yylineno);
+                return INCOP;
             }
 
 {DECOP}     {
                 print_tok("DECOP", yytext);
                 print_log("DECOP", yytext, yylineno);
+                return DECOP;
             }
             
 {RELOP}     {
                 print_tok("RELOP", yytext);
                 print_log("RELOP", yytext, yylineno);
+                yylval.op = strdup(yytext);
+                return RELOP;
             }
 
 {ASSIGNOP}  {
                 print_tok("ASSIGNOP", yytext);
                 print_log("ASSIGNOP", yytext, yylineno);
+                yylval.op = strdup(yytext);
+                return ASSIGNOP;
             }
 
 {LOGICOP}   {
                 print_tok("LOGICOP", yytext);
                 print_log("LOGICOP", yytext, yylineno);
+                yylval.op = strdup(yytext);
+                return LOGICOP;
             }
 
 {NOT}       {
                 print_tok("NOT", yytext);
                 print_log("NOT", yytext, yylineno);
+                yylval.op = strdup(yytext);
+                return NOT;
             }
 
 {LPAREN}    {
                 print_tok("LPAREN", yytext);
                 print_log("LPAREN", yytext, yylineno);
+                return LPAREN;
             }
 
 {RPAREN}    {
                 print_tok("RPAREN", yytext);
                 print_log("RPAREN", yytext, yylineno);
+                return RPAREN;
             }
 
 {LCURL}     {
                 print_tok("LCURL", yytext);
                 print_log("LCURL", yytext, yylineno);
-                symb_tab.enterScope();
+                sym_tab.enterScope();
+                return LCURL;  
             }
 
 {RCURL}     {
                 print_tok("RCURL", yytext);
                 print_log("RCURL", yytext, yylineno);
-                symb_tab.exitScope();
+                sym_tab.exitScope();
+                return RCURL;
             }
 
 {LTHIRD}    {
                 print_tok("LTHIRD", yytext);
                 print_log("LTHIRD", yytext, yylineno);
+                return LTHIRD;
             }
 
 {RTHIRD}    {
                 print_tok("RTHIRD", yytext);
                 print_log("RTHIRD", yytext, yylineno);
+                return RTHIRD;
             }
 
 {COMMA}     {
                 print_tok("COMMA", yytext);
                 print_log("COMMA", yytext, yylineno);
+                return COMMA;
             }
 
 {SEMICOLON} {
                 print_tok("SEMICOLON", yytext);
                 print_log("SEMICOLON", yytext, yylineno);
+                return SEMICOLON;
             }
 
 \"          {

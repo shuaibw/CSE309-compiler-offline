@@ -1,9 +1,9 @@
 #!/bin/bash
 
 ./cleaner.sh
-bison -d -y parser.y
+bison --color -Wconflicts-sr -v --debug --defines=y.tab.h -Wconflicts-sr parser.y
 echo 'Generated the parser C file as well the header file'
-g++ -w -c -o y.o y.tab.c
+g++ -w -c -o y.o parser.tab.c
 echo 'Generated the parser object file'
 flex lex.l
 echo 'Generated the scanner C file'

@@ -1,14 +1,37 @@
 Line no 1: Token <INT> Lexeme int found
 
-Line no 1: Token <ID> Lexeme x found
+Line no 1: Token <ID> Lexeme var found
+
+Line no 1: Token <LPAREN> Lexeme ( found
+
+Line no 1: Token <INT> Lexeme int found
+
+Line no 1: Token <ID> Lexeme a found
+
+Line no 1: Token <COMMA> Lexeme , found
+
+Line no 1: Token <INT> Lexeme int found
+
+Line no 1: Token <ID> Lexeme b found
+
+Line no 1: Token <RPAREN> Lexeme ) found
+
+Line no 1: Token <LCURL> Lexeme { found
+
+Line no 2: Token <RETURN> Lexeme return found
+
+Line no 2: Token <ID> Lexeme a found
+
+Line no 2: Token <ADDOP> Lexeme + found
+
+Line no 2: Token <ID> Lexeme b found
+
+Line no 2: Token <SEMICOLON> Lexeme ; found
+
+Line no 3: Token <RCURL> Lexeme } found
 
 ScopeTable # 1
-1 --> < x : ID >
+0 --> < var : ID >
 
-Line no 1: Token <SEMICOLON> Lexeme ; found
-
-ScopeTable # 1
-1 --> < x : ID >
-
-Total lines: 1
+Total lines: 3
 Total errors: 0

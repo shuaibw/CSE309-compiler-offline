@@ -2,7 +2,110 @@ Line 1: type_specifier : INT
 
 int
 
-ScopeTable # 1
+Line 1: type_specifier : INT
 
-Total number of lines: 1
+int
+
+Line 1: parameter_list : type_specifier ID
+
+int a
+
+Line 1: type_specifier : INT
+
+int
+
+Line 1: parameter_list : parameter_list COMMA type_specifier ID
+
+int a,int b
+
+Line 2: variable : ID
+
+a
+
+Line 2: factor : variable
+
+a
+
+Line 2: unary_expression : factor
+
+a
+
+Line 2: term : unary_expression
+
+a
+
+Line 2: simple_expression : term
+
+a
+
+Line 2: variable : ID
+
+b
+
+Line 2: factor : variable
+
+b
+
+Line 2: unary_expression : factor
+
+b
+
+Line 2: term : unary_expression
+
+b
+
+Line 2: simple_expression : simple_expression ADDOP term
+
+a+b
+
+Line 2: rel_expression : simple_expression
+
+a+b
+
+Line 2: logic_expression : rel_expression
+
+a+b
+
+Line 2: expression : logic_expression
+
+a+b
+
+Line 2: statement : RETURN expression SEMICOLON
+
+return a+b;
+
+Line 2: statements : statement
+
+return a+b;
+
+Line 3: compound_statement : LCURL statements RCURL
+
+{
+return a+b;
+}
+
+Line 3: func_definition : type_specifier ID LPAREN parameter_list RPAREN compound_statement
+
+int var(int a,int b){
+return a+b;
+}
+
+Line 3: unit : func_definition
+
+int var(int a,int b){
+return a+b;
+}
+
+Line 3: program : unit
+
+int var(int a,int b){
+return a+b;
+}
+
+Line 3: start : program
+
+ScopeTable # 1
+0 --> < var : ID >
+
+Total number of lines: 3
 Total number of errors: 0

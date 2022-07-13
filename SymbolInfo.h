@@ -7,6 +7,7 @@
 
 #include<string>
 #include<ostream>
+#include<vector>
 /*
  * SymbolInfo classifies the tokens with respective description.
  * Each SymbolInfo is hashed in a ScopeTable. In case of a
@@ -25,6 +26,14 @@ private:
     std::string name, type;
     SymbolInfo *next;
 public:
+    // Helper fields for function type
+    std::string ret_type;
+    bool func_declared = false;
+    bool func_defined = false;
+    int param_decl_len;
+    std::vector<std::string> param_list;
+    //
+
     SymbolInfo(std::string name, std::string type) :
             name{std::move(name)},
             type{std::move(type)},

@@ -1,1 +1,1 @@
-<INT> <ID, x> <SEMICOLON, ;> 
+<INT> <ID, var> <LPAREN, (> <INT> <ID, a> <COMMA, ,> <INT> <ID, b> <RPAREN, )> <LCURL, {> <RETURN> <ID, a> <ADDOP, +> <ID, b> <SEMICOLON, ;> <RCURL, }> 
