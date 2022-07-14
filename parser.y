@@ -284,10 +284,18 @@ var_declaration     :   type_specifier declaration_list SEMICOLON
     for(const auto &s: vars){
         size_t loc = s.find("[");
         string name;
-        if(loc==string::npos) name=s;
-        else name=s.substr(0, loc);
+        string dtype;
+        if(loc==string::npos) {
+            name=s;
+            dtype=$1->data;
+        }
+        else {
+            name=s.substr(0, loc);
+            dtype="ara_"+$1->data;
+        }
         SymbolInfo* sym = sym_tab.lookUp(name);
-        sym->data_type += $1->data;
+        if(!sym->data_type.empty()) continue;
+        sym->data_type = dtype;
     }
     delete $1;
     delete $2;
@@ -318,23 +326,21 @@ type_specifier      :   INT
                     ;
 declaration_list    :   declaration_list COMMA ID
 {
-    print_parser_grammar("declaration_list", "declaration_list COMMA ID");
     $$ = new putil();
     $$->data = $1->data + "," + $3->getName();
     //----Symbol table insertion
     bool inserted = sym_tab.insert($3->getName(), $3->getType(), llo);
     if(inserted == false){
         print_multidecl_var($3->getName());
-    }else {
-        print_parser_text($$->data);
     }
+    print_parser_grammar("declaration_list", "declaration_list COMMA ID");
+    print_parser_text($$->data);
     //----Finished symbol table insertion
     delete $1;
     delete $3;
 }
                     |   declaration_list COMMA ID LTHIRD CONST_INT RTHIRD
 {
-    print_parser_grammar("declaration_list", "declaration_list COMMA ID LTHIRD CONST_INT RTHIRD");
     $$ = new putil();
     $$->data = $1->data + "," + $3->getName() + "[" + $5->getName() + "]";
     //-----Symbol table insertion
@@ -342,11 +348,8 @@ declaration_list    :   declaration_list COMMA ID
     if(inserted == false) {
         print_multidecl_var($3->getName());
     }
-    else {
-        print_parser_text($$->data);
-        SymbolInfo* sym = sym_tab.lookUp($3->getName());
-        sym->data_type = "ara_";
-    }
+    print_parser_grammar("declaration_list", "declaration_list COMMA ID LTHIRD CONST_INT RTHIRD");
+    print_parser_text($$->data);
     //-----Finished SymbolTable insertion
     delete $1;
     delete $3;
@@ -354,7 +357,6 @@ declaration_list    :   declaration_list COMMA ID
 }
                     |   ID
 {
-    print_parser_grammar("declaration_list", "ID");
     $$ = new putil();
     $$->data = $1->getName();
     //-----SymbleTable insertion
@@ -363,13 +365,13 @@ declaration_list    :   declaration_list COMMA ID
     if(inserted == false) {
         print_multidecl_var($1->getName());
     }
-    else print_parser_text($$->data);
+    print_parser_grammar("declaration_list", "ID");
+    print_parser_text($$->data);
     //------Finished SymbolTable insertion
     delete $1;
 }
                     |   ID LTHIRD CONST_INT RTHIRD
 {
-    print_parser_grammar("declaration_list", "ID LTHIRD CONST_INT RTHIRD");
     $$ = new putil();
     $$->data = $1->getName() + "[" + $3->getName() + "]";
     //-----SymbleTable insertion
@@ -377,12 +379,8 @@ declaration_list    :   declaration_list COMMA ID
     if(inserted == false) {
         print_multidecl_var($1->getName());
     }
-    else {
-        print_parser_text($$->data);
-        SymbolInfo* sym = sym_tab.lookUp($1->getName());
-        sym->data_type = "ara_";
-
-    }
+    print_parser_grammar("declaration_list", "ID LTHIRD CONST_INT RTHIRD");
+    print_parser_text($$->data);
     //------Finished SymbolTable insertion
     delete $1;
     delete $3;
@@ -520,11 +518,11 @@ variable            :   ID
     $$ = new putil();
     $$->data = $1->getName() + "[" + $3->data + "]";
     SymbolInfo *ret = sym_tab.lookUp($1->getName());
-    if(ret == nullptr){
+    if(ret == nullptr){ //not declared yet
         print_undecl_var($1->getName());
         $$->type="ERR";
-    }else{
-        $$->type = ret->getType();
+    }else if($3->type!="CONST_INT"){ //Invalid index
+        print_invalid_ara_idx();
     }
     print_parser_text($$->data);
     delete $1;
@@ -543,6 +541,13 @@ expression          :   logic_expression
                     |   variable ASSIGNOP logic_expression
 {
     print_parser_grammar("expression", "variable ASSIGNOP logic_expression");
+    string v = $1->data;
+    size_t loc = v.find("[");
+    string var_name = loc==string::npos? v : v.substr(0, loc);
+    SymbolInfo* sym = sym_tab.lookUp(var_name);
+    if(sym!=nullptr && !match_types(sym->data_type, $3->type)){ //was declared before, but type mismatch
+        print_type_mismatch();
+    }
     $$ = new putil();
     $$->data = $1->data + "=" + $3->data;
     $$->type = $3->type;
@@ -694,7 +699,7 @@ factor              :   variable
     print_parser_grammar("factor", "CONST_INT");
     $$ = new putil();
     $$->data = $1->getName();
-    $$->type = $1->getType();
+    $$->type = "CONST_INT";
     print_parser_text($$->data);
     delete $1;
 }
@@ -703,7 +708,7 @@ factor              :   variable
     print_parser_grammar("factor", "CONST_FLOAT");
     $$ = new putil();
     $$->data = $1->getName();
-    $$->type = $1->getType();
+    $$->type = "CONST_FLOAT";
     print_parser_text($$->data);
     delete $1;
 }

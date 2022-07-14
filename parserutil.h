@@ -34,32 +34,47 @@ void print_parser_text(string data){
 }
 
 void print_undecl_var(string name){
-        err_count++;
-        peo << "Error at line " << yylineno << ": " << "Undefined variable " << name << "\n" << endl;
-        plo << "Error at line " << yylineno << ": " << "Undefined variable " << name << "\n" << endl;
+    err_count++;
+    peo << "Error at line " << yylineno << ": " << "Undefined variable " << name << "\n" << endl;
+    plo << "Error at line " << yylineno << ": " << "Undefined variable " << name << "\n" << endl;
 }
 void print_multidecl_var(string name){
-        err_count++;
-        peo << "Error at line " << yylineno << ": " << "Multiple declaration of variable " << name << "\n" << endl;
-        plo << "Error at line " << yylineno << ": " << "Multiple declaration of variable " << name << "\n" << endl;
+    err_count++;
+    peo << "Error at line " << yylineno << ": " << "Multiple declaration of " << name << "\n" << endl;
+    plo << "Error at line " << yylineno << ": " << "Multiple declaration of " << name << "\n" << endl;
 }
 
 void print_multidecl_func(string name){
-        err_count++;
-        peo << "Error at line " << yylineno << ": " << "Multiple declaration of function " << name << "\n" << endl;
-        plo << "Error at line " << yylineno << ": " << "Multiple declaration of function " << name << "\n" << endl;
+    err_count++;
+    peo << "Error at line " << yylineno << ": " << "Multiple declaration of function " << name << "\n" << endl;
+    plo << "Error at line " << yylineno << ": " << "Multiple declaration of function " << name << "\n" << endl;
 }
 
 void print_multidef_func(string name){
-        err_count++;
-        peo << "Error at line " << yylineno << ": " << "Multiple definition of function " << name << "\n" << endl;
-        plo << "Error at line " << yylineno << ": " << "Multiple definition of function " << name << "\n" << endl;
+    err_count++;
+    peo << "Error at line " << yylineno << ": " << "Multiple definition of function " << name << "\n" << endl;
+    plo << "Error at line " << yylineno << ": " << "Multiple definition of function " << name << "\n" << endl;
 }
 
 void print_invalid_fun_def(string name){
     err_count++;
     peo << "Error at line " << yylineno << ": " << "Invalid definition of function " << name << "\n" << endl;
     plo << "Error at line " << yylineno << ": " << "Invalid definition of function " << name << "\n" << endl;
+}
+void print_invalid_ara_idx(){
+    err_count++;
+    peo << "Error at line " << yylineno << ": " << "Expression inside third brackets not an integer" << "\n" << endl;
+    plo << "Error at line " << yylineno << ": " << "Expression inside third brackets not an integer" << "\n" << endl;
+}
+void print_type_mismatch(){
+    err_count++;
+    peo << "Error at line " << yylineno << ": " << "Type Mismatch" << "\n" << endl;
+    plo << "Error at line " << yylineno << ": " << "Type Mismatch" << "\n" << endl;
+}
+
+bool match_types(string lhs, string rhs){
+    return ((lhs == "int" || lhs == "ara_int") && rhs == "CONST_INT")
+        || ((lhs == "float" || lhs == "ara_float") && rhs == "CONST_FLOAT");
 }
 
 vector<string> split(string s, char c = ' '){

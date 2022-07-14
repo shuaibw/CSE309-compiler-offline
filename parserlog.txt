@@ -119,9 +119,11 @@ Line 6: type_specifier : FLOAT
 
 float
 
+Error at line 6: Multiple declaration of c
+
 Line 6: declaration_list : ID
 
-Error at line 6: Multiple declaration of variable c
+c
 
 Line 6: var_declaration : type_specifier declaration_list SEMICOLON
 
@@ -165,6 +167,8 @@ Line 7: expression : logic_expression
 2.5
 
 Line 7: variable : ID LTHIRD expression RTHIRD
+
+Error at line 7: Expression inside third brackets not an integer
 
 a[2.5]
 
@@ -240,6 +244,8 @@ Line 8: logic_expression : rel_expression
 
 Line 8: expression : variable ASSIGNOP logic_expression
 
+Error at line 8: Type Mismatch
+
 i=2.3
 
 Line 8: expression_statement : expression SEMICOLON
@@ -298,6 +304,8 @@ Line 9: logic_expression : rel_expression
 2%3.7
 
 Line 9: expression : variable ASSIGNOP logic_expression
+
+Error at line 9: Type Mismatch
 
 j=2%3.7
 
@@ -619,4 +627,4 @@ ScopeTable # 1
 6 --> < main : ID >
 
 Total number of lines: 15
-Total number of errors: 2
+Total number of errors: 5

@@ -1,4 +1,10 @@
-Error at line 6: Multiple declaration of variable c
+Error at line 6: Multiple declaration of c
+
+Error at line 7: Expression inside third brackets not an integer
+
+Error at line 8: Type Mismatch
+
+Error at line 9: Type Mismatch
 
 Error at line 12: Undefined variable b
 
