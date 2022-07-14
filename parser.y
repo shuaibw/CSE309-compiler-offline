@@ -19,7 +19,7 @@ ofstream llo(LEX_LOG_FILE, ios::out); // lex log out
 ofstream lto(LEX_TOKEN_FILE, ios::out); // lex token out
 int err_count = 0;
 SymbolTable sym_tab(7);
-vector<string> param_holder;
+vector<SymbolInfo> param_holder;
 
 void yyerror(string s){
 	plo << "Error at line "<< yylineno << ": " << s << "\n" << endl;
@@ -108,11 +108,10 @@ func_declaration    :   type_specifier ID LPAREN parameter_list RPAREN SEMICOLON
     }
     else {
         print_parser_text($$->data);
-        int param_decl_len = split($4->data, ',').size();
         SymbolInfo* sym = sym_tab.lookUp($2->getName());
-        sym->param_decl_len = param_decl_len;
         sym->ret_type = $1->data;
-        sym->func_declared = true;
+        sym->param_list = param_holder;
+        param_holder.clear();
     }
     delete $2;
     delete $4;
@@ -129,58 +128,82 @@ func_declaration    :   type_specifier ID LPAREN parameter_list RPAREN SEMICOLON
     else {
         print_parser_text($$->data);
         SymbolInfo* sym = sym_tab.lookUp($2->getName());
-        sym->param_decl_len = 0;
         sym->ret_type = $1->data;
-        sym->func_declared = true;
     }
     delete $1;
     delete $2;
 }
                     ;
-func_definition     :   type_specifier ID LPAREN parameter_list RPAREN compound_statement
+func_definition     :   type_specifier ID LPAREN parameter_list RPAREN 
+{   //Function scope not entered yet, insert function to global scope
+    bool inserted = sym_tab.insert($2->getName(), $2->getType(), llo);
+    SymbolInfo* sym = sym_tab.lookUp($2->getName());
+    if(!inserted){ //in current scope, sym points to previously declared ID. Now validate
+        bool valid_def = (sym->param_list.size()==param_holder.size()) && (sym->ret_type == $1->data);
+        if(!valid_def){
+            //handle error
+            console_log("ERROR ERROR ERROR! PARAM LEN MISMATCH");
+
+        }
+        for(int i=0;i<param_holder.size();i++){
+            if(sym->param_list.at(i).getType()!=param_holder.at(i).getType()){
+                valid_def = false;
+                break;
+            }
+        }
+        if(!valid_def){
+            console_log("ERROR ERROR ERROR! PARAM TYPE MISMATCH");
+        }
+    }
+    sym->param_list = param_holder;
+    sym->func_defined = true;
+    sym->ret_type = $1->data;
+    // Don't clear params, to be inserted in function scope by compound_statement
+}
+                        compound_statement
 {
     print_parser_grammar("func_definition", "type_specifier ID LPAREN parameter_list RPAREN compound_statement");
     $$ = new putil();
-    $$->data = $1->data + " " + $2->getName() + "(" + $4->data + ")" + $6->data;
+    $$->data = $1->data + " " + $2->getName() + "(" + $4->data + ")" + $7->data;
     print_parser_text($$->data);
-    bool inserted = sym_tab.insert($2->getName(), $2->getType(), llo);
-    SymbolInfo* sym = sym_tab.lookUp($2->getName());
-    vector<string> param_list = parse_params($4->data);
-    if(sym->func_declared == true){
-        if(sym->func_defined == false){
-            bool is_valid_def = ($1->data == sym->ret_type) && (param_list.size() == sym->param_decl_len);
-            if (is_valid_def == false){
-                print_invalid_fun_def($2->getName());
-                //HANDLE ERROR
-            }
-        }else{
-            print_multidef_func($2->getName());
-            //HANDLE ERRORF
-        }
-    }
-    sym->func_declared = true;
-    sym->func_defined = true;
-    sym->param_list = param_list;
+    
     delete $1;
     delete $2;
     delete $4;
-    delete $6;
+    delete $7;
 }
-                    |   type_specifier ID LPAREN RPAREN compound_statement
+                    |   type_specifier ID LPAREN RPAREN
+{
+    bool inserted = sym_tab.insert($2->getName(), $2->getType(), llo);
+    SymbolInfo* sym = sym_tab.lookUp($2->getName());
+    if(!inserted){ //in current scope, sym points to previously declared ID. Now validate
+        bool valid_def = (sym->param_list.empty()) && (sym->ret_type == $1->data);
+        if(!valid_def){
+            //handle error
+            console_log("ERROR ERROR ERROR! PARAM LEN MISMATCH");
+
+        }
+    }
+    sym->func_defined = true;
+    sym->ret_type = $1->data;
+    param_holder.clear();
+}
+                        compound_statement
 {
     print_parser_grammar("func_definition", "type_specifier ID LPAREN RPAREN compound_statement");
     $$ = new putil();
-    $$->data = $1->data + " " + $2->getName() + "()" + $5->data;
+    $$->data = $1->data + " " + $2->getName() + "()" + $6->data;
     print_parser_text($$->data);
     delete $1;
     delete $2;
-    delete $5;
+    delete $6;
 }
                     ;
 
 parameter_list      :   parameter_list COMMA type_specifier ID
 {
     print_parser_grammar("parameter_list", "parameter_list COMMA type_specifier ID");
+    param_holder.emplace_back($4->getName(), $3->data);
     $$ = new putil();
     $$->data = $1->data +"," + $3->data + " " + $4->getName();
     print_parser_text($$->data);
@@ -191,6 +214,7 @@ parameter_list      :   parameter_list COMMA type_specifier ID
                     |   parameter_list COMMA type_specifier
 {
     print_parser_grammar("parameter_list", "parameter_list COMMA type_specifier");
+    param_holder.emplace_back("-1", $3->data);
     $$ = new putil();
     $$->data = $1->data + "," + $3->data;
     print_parser_text($$->data);
@@ -200,6 +224,7 @@ parameter_list      :   parameter_list COMMA type_specifier ID
                     |   type_specifier ID
 {
     print_parser_grammar("parameter_list", "type_specifier ID");
+    param_holder.emplace_back($2->getName(), $1->data);
     $$ = new putil();
     $$->data = $1->data + " " + $2->getName();
     print_parser_text($$->data);
@@ -207,25 +232,46 @@ parameter_list      :   parameter_list COMMA type_specifier ID
                     |   type_specifier
 {
     print_parser_grammar("parameter_list", "type_specifier");
+    param_holder.emplace_back("-1", $1->data);
     $$ = new putil();
     $$->data = $1->data;
     print_parser_text($$->data);
 }
                     ;
-compound_statement  :   LCURL statements RCURL
+compound_statement  :   LCURL 
+{ //Now insert function parameters to scope table if they exist
+    sym_tab.enterScope();
+    console_log(to_string(param_holder.size()));
+    if(!param_holder.empty()){ //param holder contains function
+        for(const auto &sym: param_holder) {
+            sym_tab.insert(sym.getName(), "ID", llo);
+            sym_tab.lookUp(sym.getName())->data_type = sym.getType();
+        }
+    }
+    param_holder.clear();
+}
+                        statements RCURL
 {
     print_parser_grammar("compound_statement", "LCURL statements RCURL");
     $$ = new putil();
-    $$->data = "{\n" + $2->data + "\n}";
+    $$->data = "{\n" + $3->data + "\n}";
     print_parser_text($$->data);
-    delete $2;
+    sym_tab.printAllScopes(plo);
+    sym_tab.exitScope();
+    delete $3;
 }
-                    |   LCURL RCURL
+                    |   LCURL
+{
+    sym_tab.enterScope();
+}
+                        RCURL
 {
     print_parser_grammar("compound_statement", "LCURL RCURL");
     $$ = new putil();
     $$->data = "{}";
     print_parser_text($$->data);
+    sym_tab.printAllScopes(plo);
+    sym_tab.exitScope();
 }
                     ;
 var_declaration     :   type_specifier declaration_list SEMICOLON
@@ -234,6 +280,15 @@ var_declaration     :   type_specifier declaration_list SEMICOLON
     $$ = new putil();
     $$->data = $1->data + " " + $2->data + ";";
     print_parser_text($$->data);
+    vector<string> vars = split($2->data, ',');
+    for(const auto &s: vars){
+        size_t loc = s.find("[");
+        string name;
+        if(loc==string::npos) name=s;
+        else name=s.substr(0, loc);
+        SymbolInfo* sym = sym_tab.lookUp(name);
+        sym->data_type += $1->data;
+    }
     delete $1;
     delete $2;
 }
@@ -268,11 +323,14 @@ declaration_list    :   declaration_list COMMA ID
     $$->data = $1->data + "," + $3->getName();
     //----Symbol table insertion
     bool inserted = sym_tab.insert($3->getName(), $3->getType(), llo);
-    if(inserted==false){
+    if(inserted == false){
         print_multidecl_var($3->getName());
-    }else print_parser_text($$->data);
+    }else {
+        print_parser_text($$->data);
+    }
     //----Finished symbol table insertion
     delete $1;
+    delete $3;
 }
                     |   declaration_list COMMA ID LTHIRD CONST_INT RTHIRD
 {
@@ -284,7 +342,11 @@ declaration_list    :   declaration_list COMMA ID
     if(inserted == false) {
         print_multidecl_var($3->getName());
     }
-    else print_parser_text($$->data);
+    else {
+        print_parser_text($$->data);
+        SymbolInfo* sym = sym_tab.lookUp($3->getName());
+        sym->data_type = "ara_";
+    }
     //-----Finished SymbolTable insertion
     delete $1;
     delete $3;
@@ -315,7 +377,12 @@ declaration_list    :   declaration_list COMMA ID
     if(inserted == false) {
         print_multidecl_var($1->getName());
     }
-    else print_parser_text($$->data);
+    else {
+        print_parser_text($$->data);
+        SymbolInfo* sym = sym_tab.lookUp($1->getName());
+        sym->data_type = "ara_";
+
+    }
     //------Finished SymbolTable insertion
     delete $1;
     delete $3;
@@ -440,6 +507,10 @@ variable            :   ID
     print_parser_grammar("variable", "ID");
     $$ = new putil();
     $$->data = $1->getName();
+    SymbolInfo* ret = sym_tab.lookUp($1->getName());
+    if(ret==nullptr){
+        print_undecl_var($1->getName());
+    }
     print_parser_text($$->data);
     delete $1;
 }

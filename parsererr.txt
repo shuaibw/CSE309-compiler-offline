@@ -1,0 +1,4 @@
+Error at line 6: Multiple declaration of variable c
+
+Error at line 12: Undefined variable b
+

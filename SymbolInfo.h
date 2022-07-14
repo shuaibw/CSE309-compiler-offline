@@ -28,10 +28,9 @@ private:
 public:
     // Helper fields for function type
     std::string ret_type;
-    bool func_declared = false;
+    std::string data_type;
     bool func_defined = false;
-    int param_decl_len;
-    std::vector<std::string> param_list;
+    std::vector<SymbolInfo> param_list;
     //
 
     SymbolInfo(std::string name, std::string type) :

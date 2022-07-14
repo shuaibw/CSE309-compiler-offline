@@ -11,22 +11,7 @@ using namespace std;
 struct putil{
     string data;
     string type;
-    vector<SymbolInfo*> sym_list;
-    vector<string> param_list;
-
     putil(){}
-    void print(){
-        cout << "Data: " << data << endl;
-        cout << "Printing symbol list: " << sym_list.size() << endl;
-        for (auto sym: sym_list){
-            cout << *sym << endl; 
-        }
-    }
-    ~putil(){
-        for (auto sym: sym_list){
-            delete sym;
-        }
-    }
 };
 extern ofstream plo;
 extern ofstream peo;

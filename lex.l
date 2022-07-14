@@ -344,6 +344,8 @@ ERREMCHAR   ''("\n")?
 {MULOP}     {
                 print_tok("MULOP", yytext);
                 print_log("MULOP", yytext, yylineno);
+                yylval.op = strdup(yytext);
+                return MULOP;
             }
 
 {ID}        {
@@ -408,14 +410,12 @@ ERREMCHAR   ''("\n")?
 {LCURL}     {
                 print_tok("LCURL", yytext);
                 print_log("LCURL", yytext, yylineno);
-                sym_tab.enterScope();
                 return LCURL;  
             }
 
 {RCURL}     {
                 print_tok("RCURL", yytext);
                 print_log("RCURL", yytext, yylineno);
-                sym_tab.exitScope();
                 return RCURL;
             }
 

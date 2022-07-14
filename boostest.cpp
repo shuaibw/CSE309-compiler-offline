@@ -29,8 +29,5 @@ vector<string> parse_params(string s){
 }
 
 int main(){
-    vector<string> vec = parse_params("int a,int b,float c,double d");
-    for(const auto &s: vec){
-        cout<<s<<endl;
-    }
+    int a,b,c;
 }
