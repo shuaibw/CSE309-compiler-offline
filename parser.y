@@ -241,10 +241,10 @@ parameter_list      :   parameter_list COMMA type_specifier ID
 compound_statement  :   LCURL 
 { //Now insert function parameters to scope table if they exist
     sym_tab.enterScope();
-    console_log(to_string(param_holder.size()));
     if(!param_holder.empty()){ //param holder contains function
         for(const auto &sym: param_holder) {
-            sym_tab.insert(sym.getName(), "ID", llo);
+            bool inserted = sym_tab.insert(sym.getName(), "ID", llo);
+            if(!inserted) print_multidecl_param(sym.getName());
             sym_tab.lookUp(sym.getName())->data_type = sym.getType();
         }
     }
@@ -361,7 +361,6 @@ declaration_list    :   declaration_list COMMA ID
     $$->data = $1->getName();
     //-----SymbleTable insertion
     bool inserted = sym_tab.insert($1->getName(), $1->getType(), llo);
-    console_log("LINE 271: inserted");
     if(inserted == false) {
         print_multidecl_var($1->getName());
     }
@@ -432,7 +431,7 @@ statement           :   var_declaration
 {
     print_parser_grammar("statement", "FOR LPAREN expression_statement expression_statement expression RPAREN statement");
     $$ = new putil();
-    $$->data = "for(" + $3->data + ";" + $4->data + ";" + $5->data + ")" + $7->data;
+    $$->data = "for(" + $3->data + $4->data + $5->data + ")" + $7->data;
     print_parser_text($$->data);
     delete $3;
     delete $4;
@@ -452,7 +451,7 @@ statement           :   var_declaration
 {
     print_parser_grammar("statement", "IF LPAREN expression RPAREN statement ELSE statement");
     $$ = new putil();
-    $$->data = "if(" + $3->data + ")" + $5->data + "else" + $7->data;
+    $$->data = "if(" + $3->data + ")" + $5->data + "else " + $7->data;
     print_parser_text($$->data);
     delete $3;
     delete $5;
@@ -506,8 +505,14 @@ variable            :   ID
     $$ = new putil();
     $$->data = $1->getName();
     SymbolInfo* ret = sym_tab.lookUp($1->getName());
-    if(ret==nullptr){
+    if(ret == nullptr){
         print_undecl_var($1->getName());
+        $$->type = "ERR";
+    }else{
+        if(ret->data_type.find("ara")==0){ //if data type starts with ara (ara_int, ara_float)
+            print_inv_ara_assignment(ret->getName()); //must contain []
+        }
+        $$->type = ret->data_type;
     }
     print_parser_text($$->data);
     delete $1;
@@ -524,6 +529,7 @@ variable            :   ID
     }else if($3->type!="CONST_INT"){ //Invalid index
         print_invalid_ara_idx();
     }
+    $$->type = ret->data_type;
     print_parser_text($$->data);
     delete $1;
     delete $3;
@@ -570,7 +576,7 @@ logic_expression    :   rel_expression
     print_parser_grammar("logic_expression", "rel_expression LOGICOP rel_expression");
     $$ = new putil();
     $$->data = $1->data + $2 + $3->data;
-    $$->type = "BOOL";
+    $$->type = "CONST_INT";
     print_parser_text($$->data);
     delete $1;
     delete $2;
@@ -591,7 +597,7 @@ rel_expression      :   simple_expression
     print_parser_grammar("rel_expression", "simple_expression RELOP simple_expression");
     $$ = new putil();
     $$->data = $1->data + $2 + $3->data;
-    $$->type = "BOOL";
+    $$->type = "CONST_INT";
     print_parser_text($$->data);
     delete $1;
     delete $2;
@@ -612,7 +618,7 @@ simple_expression   :   term
     print_parser_grammar("simple_expression", "simple_expression ADDOP term");
     $$ = new putil();
     $$->data = $1->data + $2 + $3->data;
-    $$->type = $1->type;
+    $$->type = upcast_type($1->type, $3->type);
     print_parser_text($$->data);
     delete $1;
     delete $2;
@@ -633,7 +639,14 @@ term                :   unary_expression
     print_parser_grammar("term", "term MULOP unary_expression");
     $$ = new putil();
     $$->data = $1->data  + $2 + $3->data;
-    $$->type = $3->type;
+    if($2[0]=='%'){
+        $$->type="CONST_INT"; 
+        if ($1->type!="CONST_INT" || $3->type!="CONST_INT") {
+            print_mod_mismatch();
+        }
+    }else{
+        $$->type = upcast_type($1->type, $3->type);
+    }
     print_parser_text($$->data);
     delete $1;
     delete $2;
@@ -645,6 +658,7 @@ unary_expression    :   ADDOP unary_expression
     print_parser_grammar("unary_expression", "ADDOP unary_expression");
     $$ = new putil();
     $$->data = $1 + $2->data;
+    $$->type = $2->type;
     print_parser_text($$->data);
     delete $1;
     delete $2;
@@ -654,6 +668,7 @@ unary_expression    :   ADDOP unary_expression
     print_parser_grammar("unary_expression", "NOT unary_expression");
     $$ = new putil();
     $$->data = "!"+$2->data;
+    $$->type = $2->type;
     print_parser_text($$->data);
     delete $2;
 }
@@ -681,6 +696,14 @@ factor              :   variable
     print_parser_grammar("factor", "ID LPAREN argument_list RPAREN");
     $$ = new putil();
     $$->data = $1->getName() + "(" + $3->data + ")";
+    SymbolInfo* sym = sym_tab.lookUp($1->getName());
+    if(sym==nullptr){
+        print_undef_func($1->getName());
+        $$->type = "ERR";
+    }else{
+        $$->type = sym->ret_type;
+        if(!sym->func_defined) print_undef_func($1->getName()); //if ID another variable?
+    }
     print_parser_text($$->data);
     delete $1;
     delete $3;
