@@ -138,5 +138,11 @@ vector<string> parse_params(string s){
     }
     return result;
 }
+bool find_param_by_name(vector<SymbolInfo> vec, string name){
+    for(const auto &s: vec){
+        if(s.getName()==name) return true;
+    }
+    return false;
+}
 
 #endif

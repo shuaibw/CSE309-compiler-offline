@@ -1,33 +1,8 @@
-#include<iostream>
-#include<string>
-#include<vector>
-using namespace std;
-
-vector<string> split(string s, char c = ' '){
-    vector<string> result;
-    const char* str = s.c_str();
-    do{
-        const char *begin = str;
-        while(*str != c && *str) str++;
-        result.push_back(string(begin, str));
-    } while (0 != *str++);
-    return result;
+#include<stdio.h>
+void foo(int a, int a);
+void foo(int a, int b){
+    printf("%d\n", a+b);
 }
-
-vector<string> parse_params(string s){
-    vector<string> result;
-    vector<string> comma_sep = split(s, ',');
-    for(const auto &str: comma_sep){
-        vector<string> space_sep = split(str, ' ');
-        if(space_sep.size()!=2){
-            result.push_back("ERR");
-            return result;
-        }
-        result.push_back(space_sep.back());
-    }
-    return result;
-}
-
 int main(){
-    int a,b,c;
+    voo(4,2);
 }

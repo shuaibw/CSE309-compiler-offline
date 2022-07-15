@@ -111,8 +111,8 @@ func_declaration    :   type_specifier ID LPAREN parameter_list RPAREN SEMICOLON
         SymbolInfo* sym = sym_tab.lookUp($2->getName());
         sym->ret_type = $1->data;
         sym->param_list = param_holder;
-        param_holder.clear();
     }
+    param_holder.clear();
     delete $2;
     delete $4;
 }
@@ -202,8 +202,11 @@ func_definition     :   type_specifier ID LPAREN parameter_list RPAREN
 
 parameter_list      :   parameter_list COMMA type_specifier ID
 {
-    print_parser_grammar("parameter_list", "parameter_list COMMA type_specifier ID");
+    if(find_param_by_name(param_holder, $4->getName())){
+        print_multidecl_param($4->getName());
+    }
     param_holder.emplace_back($4->getName(), $3->data);
+    print_parser_grammar("parameter_list", "parameter_list COMMA type_specifier ID");
     $$ = new putil();
     $$->data = $1->data +"," + $3->data + " " + $4->getName();
     print_parser_text($$->data);
@@ -223,10 +226,14 @@ parameter_list      :   parameter_list COMMA type_specifier ID
 }
                     |   type_specifier ID
 {
-    print_parser_grammar("parameter_list", "type_specifier ID");
+    if(find_param_by_name(param_holder, $2->getName())){
+        print_multidecl_param($2->getName());
+    }
     param_holder.emplace_back($2->getName(), $1->data);
+    print_parser_grammar("parameter_list", "type_specifier ID");
     $$ = new putil();
     $$->data = $1->data + " " + $2->getName();
+
     print_parser_text($$->data);
 }
                     |   type_specifier
@@ -244,7 +251,7 @@ compound_statement  :   LCURL
     if(!param_holder.empty()){ //param holder contains function
         for(const auto &sym: param_holder) {
             bool inserted = sym_tab.insert(sym.getName(), "ID", llo);
-            if(!inserted) print_multidecl_param(sym.getName());
+            
             sym_tab.lookUp(sym.getName())->data_type = sym.getType();
         }
     }

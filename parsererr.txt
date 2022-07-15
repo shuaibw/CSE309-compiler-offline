@@ -1,0 +1,4 @@
+Error at line 1: Multiple declaration of a in parameter
+
+Error at line 2: Multiple declaration of a in parameter
+
