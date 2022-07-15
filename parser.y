@@ -20,6 +20,7 @@ ofstream lto(LEX_TOKEN_FILE, ios::out); // lex token out
 int err_count = 0;
 SymbolTable sym_tab(7);
 vector<SymbolInfo> param_holder;
+vector<string> arg_type_holder;
 
 void yyerror(string s){
 	plo << "Error at line "<< yylineno << ": " << s << "\n" << endl;
@@ -44,6 +45,9 @@ int yyparse(void);
 %type <pt>  start program unit variable var_declaration type_specifier func_declaration func_definition parameter_list
 %type <pt>  expression factor unary_expression term simple_expression rel_expression statement statements compound_statement logic_expression expression_statement
 %type <pt> arguments argument_list declaration_list
+
+%nonassoc LOWER_THAN_ELSE
+%nonassoc ELSE
 
 %destructor{delete $$;} <pt>
 %%
@@ -465,7 +469,7 @@ statement           :   var_declaration
     delete $5;
     delete $7;
 }
-                    |   IF LPAREN expression RPAREN statement
+                    |   IF LPAREN expression RPAREN statement %prec LOWER_THAN_ELSE
 {
     print_parser_grammar("statement", "IF LPAREN expression RPAREN statement");
     $$ = new putil();
@@ -498,6 +502,10 @@ statement           :   var_declaration
     print_parser_grammar("statement", "PRINTLN LPAREN ID RPAREN SEMICOLON");
     $$ = new putil();
     $$->data = "printf(" + $3->getName() + ");";
+    SymbolInfo* sym = sym_tab.lookUp($3->getName());
+    if(sym==nullptr){
+        print_undecl_var($3->getName());
+    }
     print_parser_text($$->data);
     delete $3;
 }
@@ -550,10 +558,13 @@ variable            :   ID
     $$ = new putil();
     $$->data = $1->getName() + "[" + $3->data + "]";
     SymbolInfo *ret = sym_tab.lookUp($1->getName());
+    bool is_idx_int = $3->type == "CONST_INT" ||  $3->type == "int";
     if(ret == nullptr){ //not declared yet
         print_undecl_var($1->getName());
         $$->type="ERR";
-    }else if($3->type!="CONST_INT"){ //Invalid index
+    }else if (ret->data_type.find("ara")!=0){//data_type doesn't begin with ara_, so not an ara
+        print_not_an_ara($1->getName());
+    } else if(!is_idx_int){ //Invalid index
         print_invalid_ara_idx();
     }
     $$->type = ret->data_type;
@@ -578,7 +589,8 @@ expression          :   logic_expression
     size_t loc = v.find("[");
     string var_name = loc==string::npos? v : v.substr(0, loc);
     SymbolInfo* sym = sym_tab.lookUp(var_name);
-    if(sym!=nullptr && !match_types(sym->data_type, $3->type)){ //was declared before, but type mismatch
+    if($3->type=="void") print_void_func_in_expr(); //don't check anything else
+    else if(sym!=nullptr && !match_types(sym->data_type, $3->type)){ //was declared before, but type mismatch
         print_type_mismatch();
     }
     $$ = new putil();
@@ -666,6 +678,13 @@ term                :   unary_expression
     print_parser_grammar("term", "term MULOP unary_expression");
     $$ = new putil();
     $$->data = $1->data  + $2 + $3->data;
+    //div/mod by zero check
+    if($3->data=="0"){
+        if($2[0]=='%') print_mod_by_zero();
+        else if($2[0]=='*') print_div_by_zero();
+    }
+    //void func check
+    if($3->type=="void") print_void_func_in_expr();
     if($2[0]=='%'){
         $$->type="CONST_INT"; 
         if ($1->type!="CONST_INT" || $3->type!="CONST_INT") {
@@ -729,8 +748,15 @@ factor              :   variable
         $$->type = "ERR";
     }else{
         $$->type = sym->ret_type;
-        if(!sym->func_defined) print_undef_func($1->getName()); //if ID another variable?
+        if(!sym->is_func) print_not_a_func($1->getName()); //something other than function
+        else if(!sym->func_defined) print_undef_func($1->getName());//declared, not defined
+        else if(arg_type_holder.size()!=sym->param_list.size()){ //declared, defined, arglens no match
+            print_param_len_mismatch($1->getName());
+        }else{ //arg lens matched, now validate
+            validate_arg_type(sym, arg_type_holder);
+        }
     }
+    arg_type_holder.clear();
     print_parser_text($$->data);
     delete $1;
     delete $3;
@@ -800,6 +826,7 @@ arguments           :   arguments COMMA logic_expression
     print_parser_grammar("arguments", "arguments COMMA logic_expression");
     $$ = new putil();
     $$->data = $1->data + "," + $3->data;
+    arg_type_holder.push_back($3->type);
     print_parser_text($$->data);
     delete $1;
     delete $3;
@@ -809,6 +836,7 @@ arguments           :   arguments COMMA logic_expression
     print_parser_grammar("arguments", "logic_expression");
     $$ = new putil();
     $$->data = $1->data;
+    arg_type_holder.push_back($1->type);
     print_parser_text($$->data);
     delete $1;
 }

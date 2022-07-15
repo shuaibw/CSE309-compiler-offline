@@ -38,6 +38,11 @@ void print_void_var(){
     peo << "Error at line " << yylineno << ": " << "Variable type cannot be void" << "\n" << endl;
     plo << "Error at line " << yylineno << ": " << "Variable type cannot be void" << "\n" << endl;
 }
+void print_void_func_in_expr(){
+    err_count++;
+    peo << "Error at line " << yylineno << ": " << "Void function used in expression" << "\n" << endl;
+    plo << "Error at line " << yylineno << ": " << "Void function used in expression" << "\n" << endl;
+}
 void print_undecl_var(string name){
     err_count++;
     peo << "Error at line " << yylineno << ": " << "Undeclared variable " << name << "\n" << endl;
@@ -48,6 +53,11 @@ void print_undef_func(string name){
     peo << "Error at line " << yylineno << ": " << "Undefined function " << name << "\n" << endl;
     plo << "Error at line " << yylineno << ": " << "Undefined function " << name << "\n" << endl;
 }
+void print_not_a_func(string name){
+    err_count++;
+    peo << "Error at line " << yylineno << ": " << "Not a function " << name << "\n" << endl;
+    plo << "Error at line " << yylineno << ": " << "Not a function " << name << "\n" << endl;    
+}
 void print_ret_type_mismatch(string name){
     err_count++;
     peo << "Error at line " << yylineno << ": " << "Return type mismatch with function declaration in function " << name << "\n" << endl;
@@ -55,8 +65,8 @@ void print_ret_type_mismatch(string name){
 }
 void print_param_len_mismatch(string name){
     err_count++;
-    peo << "Error at line " << yylineno << ": " << "Total number of arguments mismatch with declaration in function " << name << "\n" << endl;
-    plo << "Error at line " << yylineno << ": " << "Total number of arguments mismatch with declaration in function " << name << "\n" << endl;
+    peo << "Error at line " << yylineno << ": " << "Total number of arguments mismatch in function " << name << "\n" << endl;
+    plo << "Error at line " << yylineno << ": " << "Total number of arguments mismatch in function " << name << "\n" << endl;
 }
 void print_multidecl_param(string name){
     err_count++;
@@ -101,13 +111,29 @@ void print_mod_mismatch(){
     peo << "Error at line " << yylineno << ": " << "Non-Integer operand on modulus operator" << "\n" << endl;
     plo << "Error at line " << yylineno << ": " << "Non-Integer operand on modulus operator" << "\n" << endl;
 }
+void print_mod_by_zero(){
+    err_count++;
+    peo << "Error at line " << yylineno << ": " << "Modulus by Zero" << "\n" << endl;
+    plo << "Error at line " << yylineno << ": " << "Modulus by Zero" << "\n" << endl;
+}
+void print_div_by_zero(){
+    err_count++;
+    peo << "Error at line " << yylineno << ": " << "Divide by Zero" << "\n" << endl;
+    plo << "Error at line " << yylineno << ": " << "Divide by Zero" << "\n" << endl;
+}
 void print_inv_ara_assignment(string name){
     err_count++;
     peo << "Error at line " << yylineno << ": " << "Type mismatch, "<< name << " is an array\n" << endl;
     plo << "Error at line " << yylineno << ": " << "Type mismatch, "<< name << " is an array\n" << endl;
 }
+void print_not_an_ara(string name){
+    err_count++;
+    peo << "Error at line " << yylineno << ": " << name << " not an array\n" << endl;
+    plo << "Error at line " << yylineno << ": " << name << " not an array\n" << endl;
+}
 
 bool match_types(string lhs, string rhs){
+    if(rhs=="ERR") return true; //already err caught, don't check
     bool lhs_int  = lhs == "int" || lhs == "ara_int";
     bool rhs_int = rhs == "CONST_INT" || rhs == "int" || rhs == "ara_int";
 
@@ -125,8 +151,6 @@ string upcast_type(string a, string b){
     bool aint = a == "CONST_INT" || a=="int" || a=="ara_int";
     bool bint = b == "CONST_INT" || b=="int" || b=="ara_int";
     if (aint && bint) return "CONST_INT";
-    console_log(a);
-    console_log(b);
     return "ERR";
 }
 vector<string> split(string s, char c = ' '){
@@ -164,10 +188,22 @@ void print_param_def_mismatch(string name, int sn){
     peo << "Error at line " << yylineno << ": Parameter no. " << sn << " does not match in function " << name << "\n" << endl;
     plo << "Error at line " << yylineno << ": Parameter no. " << sn << " does not match in function " << name << "\n" << endl;
 }
-bool match_param_type(string declared, string passed){
-    if(declared == "int") return passed == "int";
-    else if(declared == "float") return (passed == "int" || passed == "float");
-    else throw runtime_error("Invalid param type: " + declared +", "+ passed);
+void print_arg_mismatch(string name, int sn){
+    err_count++;
+    peo << "Error at line " << yylineno << ": " << sn << "th" << " argument mismatch in function " << name << "\n" << endl;
+    plo << "Error at line " << yylineno << ": " << sn << "th" << " argument mismatch in function " << name << "\n" << endl;
+}
+bool match_param_type(string declared, string defined){
+    if(declared == "int") return defined == "int";
+    else if(declared == "float") return (defined == "int" || defined == "float");
+    else throw runtime_error("Invalid param type: " + declared +", "+ defined);
+}
+bool match_arg_type(string defined, string passed){
+    bool pint = (passed == "CONST_INT" || passed == "int" || passed == "ara_int");
+    bool pflt = (passed == "float" || passed == "CONST_FLOAT" || passed == "ara_float");
+    if(defined == "int") return pint;
+    else if(defined == "float") return pint || pflt;
+    else throw runtime_error("Invalid arg type: " + defined +", "+ defined);
 }
 void validate_param_type(SymbolInfo* sym, vector<SymbolInfo> param_holder){
     for(int i=0;i<param_holder.size();i++){
@@ -176,5 +212,13 @@ void validate_param_type(SymbolInfo* sym, vector<SymbolInfo> param_holder){
         }
     }
 }
-
+void validate_arg_type(SymbolInfo* sym, vector<string> arg_type_holder){
+    vector<SymbolInfo>& params = sym->param_list;
+    for(int i=0;i<arg_type_holder.size();i++){
+        if(!match_arg_type(params.at(i).getType(), arg_type_holder.at(i))){
+            print_arg_mismatch(sym->getName(), i+1);
+            return; //sampleio matha kharap >_<
+        }
+    }
+}
 #endif
