@@ -65,8 +65,8 @@ void print_ret_type_mismatch(string name){
 }
 void print_param_len_mismatch(string name){
     err_count++;
-    peo << "Error at line " << yylineno << ": " << "Total number of arguments mismatch in function " << name << "\n" << endl;
-    plo << "Error at line " << yylineno << ": " << "Total number of arguments mismatch in function " << name << "\n" << endl;
+    peo << "Error at line " << yylineno << ": " << "Total number of arguments mismatch with declaration in function " << name << "\n" << endl;
+    plo << "Error at line " << yylineno << ": " << "Total number of arguments mismatch with declaration in function " << name << "\n" << endl;
 }
 void print_multidecl_param(string name){
     err_count++;
@@ -78,7 +78,11 @@ void print_multidecl_var(string name){
     peo << "Error at line " << yylineno << ": " << "Multiple declaration of " << name << "\n" << endl;
     plo << "Error at line " << yylineno << ": " << "Multiple declaration of " << name << "\n" << endl;
 }
-
+void print_return_type_mismatch(string name){
+    err_count++;
+    peo << "Error at line " << yylineno << ": " << "Return type mismatch of " << name << "\n" << endl;
+    plo << "Error at line " << yylineno << ": " << "Return type mismatch of " << name << "\n" << endl;
+}
 void print_multidecl_func(string name){
     err_count++;
     peo << "Error at line " << yylineno << ": " << "Multiple declaration of function " << name << "\n" << endl;
