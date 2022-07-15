@@ -21,6 +21,7 @@ int err_count = 0;
 SymbolTable sym_tab(7);
 vector<SymbolInfo> param_holder;
 vector<string> arg_type_holder;
+vector<string> ret_type_holder;
 
 void yyerror(string s){
 	plo << "Error at line "<< yylineno << ": " << s << "\n" << endl;
@@ -174,9 +175,8 @@ func_definition     :   type_specifier ID LPAREN parameter_list RPAREN
 }
                         compound_statement
 {
+    match_func_ret_type(ret_type_holder, $1->data, $2->getName());
     print_parser_grammar("func_definition", "type_specifier ID LPAREN parameter_list RPAREN compound_statement");
-    if(!match_types($1->data, $7->type)) print_return_type_mismatch($2->getName());
-    plo << $1->data << ", "<<$7->type<<"\n\n";
     $$ = new putil();
     $$->data = $1->data + " " + $2->getName() + "(" + $4->data + ")" + $7->data;
     print_parser_text($$->data);
@@ -212,9 +212,8 @@ func_definition     :   type_specifier ID LPAREN parameter_list RPAREN
 }
                         compound_statement
 {
+    match_func_ret_type(ret_type_holder, $1->data, $2->getName());
     print_parser_grammar("func_definition", "type_specifier ID LPAREN RPAREN compound_statement");
-    if(!match_types($1->data, $6->type)) print_return_type_mismatch($2->getName());
-    plo << $1->data << ", "<<$6->type<<"\n\n";
     $$ = new putil();
     $$->data = $1->data + " " + $2->getName() + "()" + $6->data;
     print_parser_text($$->data);
@@ -286,7 +285,6 @@ compound_statement  :   LCURL
     print_parser_grammar("compound_statement", "LCURL statements RCURL");
     $$ = new putil();
     $$->data = "{\n" + $3->data + "\n}";
-    $$->type = $3->type; //for holding return data type
     print_parser_text($$->data);
     sym_tab.printAllScopes(plo);
     sym_tab.exitScope();
@@ -429,7 +427,6 @@ statements          :   statement
     print_parser_grammar("statements", "statement");
     $$ = new putil();
     $$->data = $1->data;
-    $$->type = $1->type; //for return value data type
     print_parser_text($$->data);
     delete $1;
 }
@@ -438,7 +435,6 @@ statements          :   statement
     print_parser_grammar("statements", "statements statement");
     $$ = new putil();
     $$->data = $1->data + "\n" + $2->data;
-    $$->type = $2->type //for return value data type
     print_parser_text($$->data);
     delete $1;
     delete $2;
@@ -524,7 +520,7 @@ statement           :   var_declaration
     print_parser_grammar("statement", "RETURN expression SEMICOLON");
     $$ = new putil();
     $$->data = "return " + $2->data + ";";
-    $$->type = $2->type;
+    ret_type_holder.push_back($2->type);
     print_parser_text($$->data);
     delete $2;
 }
@@ -698,7 +694,9 @@ term                :   unary_expression
     if($3->type=="void") print_void_func_in_expr();
     if($2[0]=='%'){
         $$->type="CONST_INT"; 
-        if ($1->type!="CONST_INT" || $3->type!="CONST_INT") {
+        bool lint = $1->type=="CONST_INT"||$1->type=="int"||$1->type=="ara_int";
+        bool rint = $3->type=="CONST_INT"||$3->type=="int"||$3->type=="ara_int";
+        if (!lint || !rint) {
             print_mod_mismatch();
         }
     }else{

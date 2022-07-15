@@ -58,10 +58,15 @@ void print_not_a_func(string name){
     peo << "Error at line " << yylineno << ": " << "Not a function " << name << "\n" << endl;
     plo << "Error at line " << yylineno << ": " << "Not a function " << name << "\n" << endl;    
 }
-void print_ret_type_mismatch(string name){
+void print_invalid_return(string name){
     err_count++;
-    peo << "Error at line " << yylineno << ": " << "Return type mismatch with function declaration in function " << name << "\n" << endl;
-    plo << "Error at line " << yylineno << ": " << "Return type mismatch with function declaration in function " << name << "\n" << endl;
+    peo << "Error at line " << yylineno << ": " << "Invalid value returned from function " << name << "\n" << endl;
+    plo << "Error at line " << yylineno << ": " << "Invalid value returned from function " << name << "\n" << endl;
+}
+void print_void_return(string name){
+    err_count++;
+    peo << "Error at line " << yylineno << ": " << "Cannot return value from function " << name << " with void return type \n" << endl;
+    plo << "Error at line " << yylineno << ": " << "Cannot return value from function " << name << " with void return type \n" << endl;
 }
 void print_param_len_mismatch(string name){
     err_count++;
@@ -78,7 +83,7 @@ void print_multidecl_var(string name){
     peo << "Error at line " << yylineno << ": " << "Multiple declaration of " << name << "\n" << endl;
     plo << "Error at line " << yylineno << ": " << "Multiple declaration of " << name << "\n" << endl;
 }
-void print_return_type_mismatch(string name){
+void print_ret_type_mismatch(string name){
     err_count++;
     peo << "Error at line " << yylineno << ": " << "Return type mismatch of " << name << "\n" << endl;
     plo << "Error at line " << yylineno << ": " << "Return type mismatch of " << name << "\n" << endl;
@@ -147,7 +152,21 @@ bool match_types(string lhs, string rhs){
 
     return (lhs_float && (rhs_int || rhs_float));
 }
-
+void match_func_ret_type(vector<string> &vec, string ret_type, string func){
+    if(ret_type=="void"){ //cannot return anything if void
+        if(!vec.size()==0) print_void_return(func);
+        vec.clear();
+        return;
+    }
+    for (const auto &s: vec){ //must match all return statements if not void
+        if(!match_types(ret_type, s)) {
+            print_invalid_return(func);
+            vec.clear();
+            return;
+        }
+    }
+    vec.clear(); //all matched, clear return type holder
+}
 string upcast_type(string a, string b){
     bool aflt = a == "CONST_FLOAT" || a=="float" || a=="ara_float";
     bool bflt = b == "CONST_FLOAT" || b=="float" || b=="ara_float";
