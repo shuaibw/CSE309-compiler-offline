@@ -30,6 +30,7 @@ public:
     std::string ret_type;
     std::string data_type;
     bool func_defined = false;
+    bool is_func = false;
     std::vector<SymbolInfo> param_list;
     //
 

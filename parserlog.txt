@@ -14,23 +14,21 @@ Line 1: type_specifier : INT
 
 int
 
-Error at line 1: Multiple declaration of a in parameter
+Line 1: parameter_list : parameter_list COMMA type_specifier
 
-Line 1: parameter_list : parameter_list COMMA type_specifier ID
-
-int a,int a
+int a,int
 
 Line 1: func_declaration : type_specifier ID LPAREN parameter_list RPAREN SEMICOLON
 
-void foo(int a,int a);
+void foo(int a,int);
 
 Line 1: unit : func_declaration
 
-void foo(int a,int a);
+void foo(int a,int);
 
 Line 1: program : unit
 
-void foo(int a,int a);
+void foo(int a,int);
 
 Line 2: type_specifier : VOID
 
@@ -44,15 +42,15 @@ Line 2: parameter_list : type_specifier ID
 
 int a
 
-Line 2: type_specifier : INT
+Line 2: type_specifier : FLOAT
 
-int
-
-Error at line 2: Multiple declaration of a in parameter
+float
 
 Line 2: parameter_list : parameter_list COMMA type_specifier ID
 
-int a,int a
+int a,float b
+
+Error at line 2: Parameter no. 2 does not match in function foo
 
 Line 3: variable : ID
 
@@ -74,54 +72,79 @@ Line 3: simple_expression : term
 
 a
 
+Line 3: variable : ID
+
+b
+
+Line 3: factor : variable
+
+b
+
+Line 3: unary_expression : factor
+
+b
+
+Line 3: term : unary_expression
+
+b
+
+Line 3: simple_expression : simple_expression ADDOP term
+
+a+b
+
 Line 3: rel_expression : simple_expression
 
-a
+a+b
 
 Line 3: logic_expression : rel_expression
 
-a
+a+b
 
 Line 3: expression : logic_expression
 
-a
+a+b
 
-Line 3: statement : RETURN expression SEMICOLON
+Line 3: expression_statement : expression SEMICOLON
 
-return a;
+a+b;
+
+Line 3: statement : expression_statement
+
+a+b;
 
 Line 3: statements : statement
 
-return a;
+a+b;
 
 Line 4: compound_statement : LCURL statements RCURL
 
 {
-return a;
+a+b;
 }
 
 ScopeTable # 1.1
+0 --> < b : ID >
 6 --> < a : ID >
 ScopeTable # 1
 4 --> < foo : ID >
 
 Line 4: func_definition : type_specifier ID LPAREN parameter_list RPAREN compound_statement
 
-void foo(int a,int a){
-return a;
+void foo(int a,float b){
+a+b;
 }
 
 Line 4: unit : func_definition
 
-void foo(int a,int a){
-return a;
+void foo(int a,float b){
+a+b;
 }
 
 Line 4: program : program unit
 
-void foo(int a,int a);
-void foo(int a,int a){
-return a;
+void foo(int a,int);
+void foo(int a,float b){
+a+b;
 }
 
 Line 4: start : program
@@ -130,4 +153,4 @@ ScopeTable # 1
 4 --> < foo : ID >
 
 Total number of lines: 4
-Total number of errors: 2
+Total number of errors: 1

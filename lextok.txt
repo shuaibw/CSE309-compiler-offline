@@ -1,1 +1,1 @@
-<VOID> <ID, foo> <LPAREN, (> <INT> <ID, a> <COMMA, ,> <INT> <ID, a> <RPAREN, )> <SEMICOLON, ;> <VOID> <ID, foo> <LPAREN, (> <INT> <ID, a> <COMMA, ,> <INT> <ID, a> <RPAREN, )> <LCURL, {> <RETURN> <ID, a> <SEMICOLON, ;> <RCURL, }> 
+<VOID> <ID, foo> <LPAREN, (> <INT> <ID, a> <COMMA, ,> <INT> <RPAREN, )> <SEMICOLON, ;> <VOID> <ID, foo> <LPAREN, (> <INT> <ID, a> <COMMA, ,> <FLOAT> <ID, b> <RPAREN, )> <LCURL, {> <ID, a> <ADDOP, +> <ID, b> <SEMICOLON, ;> <RCURL, }> 

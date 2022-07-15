@@ -33,6 +33,11 @@ void print_parser_text(string data){
     plo << data << "\n" << endl;
 }
 
+void print_void_var(){
+    err_count++;
+    peo << "Error at line " << yylineno << ": " << "Variable type cannot be void" << "\n" << endl;
+    plo << "Error at line " << yylineno << ": " << "Variable type cannot be void" << "\n" << endl;
+}
 void print_undecl_var(string name){
     err_count++;
     peo << "Error at line " << yylineno << ": " << "Undeclared variable " << name << "\n" << endl;
@@ -42,6 +47,16 @@ void print_undef_func(string name){
     err_count++;
     peo << "Error at line " << yylineno << ": " << "Undefined function " << name << "\n" << endl;
     plo << "Error at line " << yylineno << ": " << "Undefined function " << name << "\n" << endl;
+}
+void print_ret_type_mismatch(string name){
+    err_count++;
+    peo << "Error at line " << yylineno << ": " << "Return type mismatch with function declaration in function " << name << "\n" << endl;
+    plo << "Error at line " << yylineno << ": " << "Return type mismatch with function declaration in function " << name << "\n" << endl;
+}
+void print_param_len_mismatch(string name){
+    err_count++;
+    peo << "Error at line " << yylineno << ": " << "Total number of arguments mismatch with declaration in function " << name << "\n" << endl;
+    plo << "Error at line " << yylineno << ": " << "Total number of arguments mismatch with declaration in function " << name << "\n" << endl;
 }
 void print_multidecl_param(string name){
     err_count++;
@@ -143,6 +158,23 @@ bool find_param_by_name(vector<SymbolInfo> vec, string name){
         if(s.getName()==name) return true;
     }
     return false;
+}
+void print_param_def_mismatch(string name, int sn){
+    err_count++;
+    peo << "Error at line " << yylineno << ": Parameter no. " << sn << " does not match in function " << name << "\n" << endl;
+    plo << "Error at line " << yylineno << ": Parameter no. " << sn << " does not match in function " << name << "\n" << endl;
+}
+bool match_param_type(string declared, string passed){
+    if(declared == "int") return passed == "int";
+    else if(declared == "float") return (passed == "int" || passed == "float");
+    else throw runtime_error("Invalid param type: " + declared +", "+ passed);
+}
+void validate_param_type(SymbolInfo* sym, vector<SymbolInfo> param_holder){
+    for(int i=0;i<param_holder.size();i++){
+        if(!match_param_type(sym->param_list.at(i).getType(), param_holder.at(i).getType())){
+            print_param_def_mismatch(sym->getName(), i+1);
+        }
+    }
 }
 
 #endif

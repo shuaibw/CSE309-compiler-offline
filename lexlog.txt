@@ -12,8 +12,6 @@ Line no 1: Token <COMMA> Lexeme , found
 
 Line no 1: Token <INT> Lexeme int found
 
-Line no 1: Token <ID> Lexeme a found
-
 Line no 1: Token <RPAREN> Lexeme ) found
 
 Line no 1: Token <SEMICOLON> Lexeme ; found
@@ -30,9 +28,9 @@ Line no 2: Token <ID> Lexeme a found
 
 Line no 2: Token <COMMA> Lexeme , found
 
-Line no 2: Token <INT> Lexeme int found
+Line no 2: Token <FLOAT> Lexeme float found
 
-Line no 2: Token <ID> Lexeme a found
+Line no 2: Token <ID> Lexeme b found
 
 Line no 2: Token <RPAREN> Lexeme ) found
 
@@ -40,11 +38,11 @@ Line no 2: Token <LCURL> Lexeme { found
 
 < foo : ID > already exists in ScopeTable# 1 at position 4, 0
 
-Line no 3: Token <RETURN> Lexeme return found
-
-< a : ID > already exists in ScopeTable# 1.1 at position 6, 0
-
 Line no 3: Token <ID> Lexeme a found
+
+Line no 3: Token <ADDOP> Lexeme + found
+
+Line no 3: Token <ID> Lexeme b found
 
 Line no 3: Token <SEMICOLON> Lexeme ; found
 

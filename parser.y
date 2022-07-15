@@ -111,6 +111,7 @@ func_declaration    :   type_specifier ID LPAREN parameter_list RPAREN SEMICOLON
         SymbolInfo* sym = sym_tab.lookUp($2->getName());
         sym->ret_type = $1->data;
         sym->param_list = param_holder;
+        sym->is_func = true;
     }
     param_holder.clear();
     delete $2;
@@ -129,6 +130,7 @@ func_declaration    :   type_specifier ID LPAREN parameter_list RPAREN SEMICOLON
         print_parser_text($$->data);
         SymbolInfo* sym = sym_tab.lookUp($2->getName());
         sym->ret_type = $1->data;
+        sym->is_func = true;
     }
     delete $1;
     delete $2;
@@ -138,26 +140,32 @@ func_definition     :   type_specifier ID LPAREN parameter_list RPAREN
 {   //Function scope not entered yet, insert function to global scope
     bool inserted = sym_tab.insert($2->getName(), $2->getType(), llo);
     SymbolInfo* sym = sym_tab.lookUp($2->getName());
-    if(!inserted){ //in current scope, sym points to previously declared ID. Now validate
-        bool valid_def = (sym->param_list.size()==param_holder.size()) && (sym->ret_type == $1->data);
-        if(!valid_def){
-            //handle error
-            console_log("ERROR ERROR ERROR! PARAM LEN MISMATCH");
-
-        }
-        for(int i=0;i<param_holder.size();i++){
-            if(sym->param_list.at(i).getType()!=param_holder.at(i).getType()){
-                valid_def = false;
-                break;
-            }
-        }
-        if(!valid_def){
-            console_log("ERROR ERROR ERROR! PARAM TYPE MISMATCH");
-        }
+    if(inserted){ //first time definition
+        sym->param_list = param_holder;
+        sym->func_defined = true;
+        sym->is_func = true;
+        sym->ret_type = $1->data;
     }
-    sym->param_list = param_holder;
-    sym->func_defined = true;
-    sym->ret_type = $1->data;
+    else if(sym->is_func){ //in current scope, sym points to previously declared ID. Now validate
+        if(!sym->func_defined){ //was not defined previously, but ret_type, param fixed
+            sym->func_defined = true;
+            bool param_len_match = sym->param_list.size()==param_holder.size();
+            bool ret_type_match = sym->ret_type == $1->data;
+            if(!ret_type_match){
+                print_ret_type_mismatch($2->getName());
+            }
+            if(!param_len_match){
+                print_param_len_mismatch($2->getName());
+            }
+            else{
+                validate_param_type(sym, param_holder);
+            }
+        }else{ //was defined already
+            print_multidef_func($2->getName());
+        }
+    }else{ // something other than func exists with same name
+        print_multidecl_var($2->getName());
+    }
     // Don't clear params, to be inserted in function scope by compound_statement
 }
                         compound_statement
@@ -176,17 +184,25 @@ func_definition     :   type_specifier ID LPAREN parameter_list RPAREN
 {
     bool inserted = sym_tab.insert($2->getName(), $2->getType(), llo);
     SymbolInfo* sym = sym_tab.lookUp($2->getName());
-    if(!inserted){ //in current scope, sym points to previously declared ID. Now validate
-        bool valid_def = (sym->param_list.empty()) && (sym->ret_type == $1->data);
-        if(!valid_def){
-            //handle error
-            console_log("ERROR ERROR ERROR! PARAM LEN MISMATCH");
-
-        }
+    if(inserted){
+        sym->func_defined = true;
+        sym->is_func = true;
+        sym->ret_type = $1->data;
+        param_holder.clear();
     }
-    sym->func_defined = true;
-    sym->ret_type = $1->data;
-    param_holder.clear();
+    else if(sym->is_func){ //in current scope, sym points to previously declared ID. Now validate
+        if(!sym->func_defined){
+            sym->func_defined = true;
+            bool ret_type_match = sym->ret_type == $1->data;
+            if(!ret_type_match){
+                print_ret_type_mismatch($2->getName());
+            }
+        }else{
+            print_multidef_func($2->getName());
+        }
+    }else{
+        print_multidecl_var($2->getName());
+    }
 }
                         compound_statement
 {
@@ -284,9 +300,13 @@ compound_statement  :   LCURL
 var_declaration     :   type_specifier declaration_list SEMICOLON
 {
     print_parser_grammar("var_declaration", "type_specifier declaration_list SEMICOLON");
+    if($1->data == "void"){
+        print_void_var();
+    }
     $$ = new putil();
     $$->data = $1->data + " " + $2->data + ";";
     print_parser_text($$->data);
+    //set data types in symbol info
     vector<string> vars = split($2->data, ',');
     for(const auto &s: vars){
         size_t loc = s.find("[");
