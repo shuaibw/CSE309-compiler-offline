@@ -17,6 +17,7 @@
     string lbuff;
     const int BUCKET = 7;
     int error_count=0;
+    extern int err_count;
     extern ofstream llo;
     extern ofstream lto;
     extern ofstream peo;
@@ -119,7 +120,16 @@
                 << "> ";
         return;
     }
-
+    void print_unk_char(string name){
+        err_count++;
+        peo << "Error at line " << yylineno << ": " << "Unrecognized character " << name << "\n" << endl;
+        plo << "Error at line " << yylineno << ": " << "Unrecognized character " << name << "\n" << endl;
+    }
+    void print_errflt(string name){
+        err_count++;
+        peo << "Error at line " << yylineno << ": " << "Invalid floating point number" << name << "\n" << endl;
+        plo << "Error at line " << yylineno << ": " << "Invalid floating point number" << name << "\n" << endl;
+    }
     void logerr_tmdp(){
         llo << "Error at line no " << yylineno
                 <<": Too many decimal points "
@@ -574,10 +584,12 @@ ERREMCHAR   ''("\n")?
 {ERRFLT}    {
                 error_count++;
                 logerr_flt();
+                print_errflt(yytext);
             }
 .           {
                 error_count++;
                 logerr_unk();
+                print_unk_char(yytext);
             }
 <<EOF>>     {
                 logdone();

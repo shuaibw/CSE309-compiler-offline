@@ -19,6 +19,7 @@ extern ofstream llo;
 extern ofstream lto;
 extern int yylineno;
 extern int err_count;
+extern void yyerror(string s);
 
 
 void console_log(string s){
@@ -152,6 +153,7 @@ bool match_types(string lhs, string rhs){
 
     return (lhs_float && (rhs_int || rhs_float));
 }
+
 void match_func_ret_type(vector<string> &vec, string ret_type, string func){
     if(ret_type=="void"){ //cannot return anything if void
         if(!vec.size()==0) print_void_return(func);
@@ -218,7 +220,7 @@ void print_arg_mismatch(string name, int sn){
 }
 bool match_param_type(string declared, string defined){
     if(declared == "int") return defined == "int";
-    else if(declared == "float") return (defined == "int" || defined == "float");
+    else if(declared == "float") return defined == "float";
     else throw runtime_error("Invalid param type: " + declared +", "+ defined);
 }
 bool match_arg_type(string defined, string passed){

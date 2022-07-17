@@ -1,96 +1,99 @@
 Line no 1: Token <INT> Lexeme int found
 
-Line no 1: Token <ID> Lexeme foo found
-
-Line no 1: Token <LPAREN> Lexeme ( found
-
-Line no 1: Token <INT> Lexeme int found
-
-Line no 1: Token <ID> Lexeme c found
+Line no 1: Token <ID> Lexeme x found
 
 Line no 1: Token <COMMA> Lexeme , found
 
-Line no 1: Token <INT> Lexeme int found
+Line no 1: Token <ID> Lexeme y found
 
-Line no 1: Token <ID> Lexeme d found
+Line no 1: Token <COMMA> Lexeme , found
 
-Line no 1: Token <RPAREN> Lexeme ) found
+Line no 1: Token <ID> Lexeme z found
 
 Line no 1: Token <SEMICOLON> Lexeme ; found
 
-Line no 2: Token <INT> Lexeme int found
+Line no 1: Token <FLOAT> Lexeme float found
 
-Line no 2: Token <ID> Lexeme main found
+Line no 1: Token <ID> Lexeme a found
 
-Line no 2: Token <LPAREN> Lexeme ( found
-
-Line no 2: Token <RPAREN> Lexeme ) found
-
-Line no 2: Token <LCURL> Lexeme { found
+Line no 1: Token <SEMICOLON> Lexeme ; found
 
 Line no 3: Token <INT> Lexeme int found
 
-Line no 3: Token <ID> Lexeme c found
+Line no 3: Token <ID> Lexeme var found
 
-Line no 3: Token <SEMICOLON> Lexeme ; found
+Line no 3: Token <LPAREN> Lexeme ( found
 
-Line no 4: Token <ID> Lexeme c found
+Line no 3: Token <INT> Lexeme int found
 
-Line no 4: Token <ASSIGNOP> Lexeme = found
+Line no 3: Token <ADDOP> Lexeme - found
 
-Line no 4: Token <ID> Lexeme foo found
+Line no 3: Token <RPAREN> Lexeme ) found
 
-Line no 4: Token <LPAREN> Lexeme ( found
+Line no 3: Token <LCURL> Lexeme { found
 
-Line no 4: Token <CONST_INT> Lexeme 1 found
+Line no 4: Token <RCURL> Lexeme } found
 
-Line no 4: Token <COMMA> Lexeme , found
+Line no 7: Token <INT> Lexeme int found
 
-Line no 4: Token <CONST_INT> Lexeme 2 found
+Line no 7: Token <ID> Lexeme main found
 
-Line no 4: Token <RPAREN> Lexeme ) found
+Line no 7: Token <LPAREN> Lexeme ( found
 
-Line no 4: Token <SEMICOLON> Lexeme ; found
+Line no 7: Token <RPAREN> Lexeme ) found
 
-Line no 5: Token <RCURL> Lexeme } found
+Line no 7: Token <LCURL> Lexeme { found
 
-Line no 6: Token <INT> Lexeme int found
+Line no 8: Token <INT> Lexeme int found
 
-Line no 6: Token <ID> Lexeme foo found
+Line no 8: Token <ID> Lexeme x found
 
-Line no 6: Token <LPAREN> Lexeme ( found
+Line no 8: Token <ADDOP> Lexeme - found
 
-Line no 6: Token <INT> Lexeme int found
+Line no 8: Token <ID> Lexeme y found
 
-Line no 6: Token <ID> Lexeme a found
+Line no 8: Token <COMMA> Lexeme , found
 
-Line no 6: Token <COMMA> Lexeme , found
+Line no 8: Token <ID> Lexeme z found
 
-Line no 6: Token <INT> Lexeme int found
+Line no 8: Token <SEMICOLON> Lexeme ; found
 
-Line no 6: Token <ID> Lexeme b found
+Line no 9: Token <ID> Lexeme a found
 
-Line no 6: Token <RPAREN> Lexeme ) found
+Line no 9: Token <ASSIGNOP> Lexeme = found
 
-Line no 6: Token <LCURL> Lexeme { found
+Line no 9: Token <CONST_INT> Lexeme 2 found
 
-< foo : ID > already exists in ScopeTable# 1 at position 4, 0
+Line no 9: Token <ADDOP> Lexeme + found
 
-Line no 7: Token <RETURN> Lexeme return found
+Line no 9: Token <ASSIGNOP> Lexeme = found
 
-Line no 7: Token <ID> Lexeme a found
+Line no 9: Token <CONST_INT> Lexeme 6 found
 
-Line no 7: Token <ADDOP> Lexeme + found
+Error at line no 10: Unrecognized character #
 
-Line no 7: Token <ID> Lexeme b found
+Line no 11: Token <ID> Lexeme x found
 
-Line no 7: Token <SEMICOLON> Lexeme ; found
+Line no 11: Token <ASSIGNOP> Lexeme = found
 
-Line no 8: Token <RCURL> Lexeme } found
+Line no 11: Token <CONST_INT> Lexeme 2 found
+
+Line no 11: Token <SEMICOLON> Lexeme ; found
+
+Line no 14: Token <RETURN> Lexeme return found
+
+Line no 14: Token <CONST_INT> Lexeme 0 found
+
+Line no 14: Token <SEMICOLON> Lexeme ; found
+
+Line no 15: Token <RCURL> Lexeme } found
 
 ScopeTable # 1
-4 --> < foo : ID >
-6 --> < main : ID >
+0 --> < var : ID >
+1 --> < x : ID >
+2 --> < y : ID >
+3 --> < z : ID >
+6 --> < a : ID >< main : ID >
 
-Total lines: 8
-Total errors: 0
+Total lines: 16
+Total errors: 1

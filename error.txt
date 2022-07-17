@@ -1,0 +1,8 @@
+Error at line 3: syntax error, unexpected ADDOP, expecting RPAREN or COMMA
+
+Error at line 8: syntax error, unexpected ADDOP, expecting COMMA or SEMICOLON
+
+Error at line 9: syntax error, unexpected ASSIGNOP
+
+Error at line 10: Unrecognized character #
+

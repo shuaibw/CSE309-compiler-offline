@@ -9,8 +9,8 @@
 
 extern int yylineno;
 extern FILE* yyin;
-const char* PARSER_LOG_FILE = "./parserlog.txt";
-const char* PARSER_ERR_FILE = "./parsererr.txt";
+const char* PARSER_LOG_FILE = "./log.txt";
+const char* PARSER_ERR_FILE = "./error.txt";
 const char* LEX_LOG_FILE = "./lexlog.txt";
 const char* LEX_TOKEN_FILE = "./lextok.txt";
 ofstream plo(PARSER_LOG_FILE, ios::out); // parser log out
@@ -40,12 +40,13 @@ int yyparse(void);
     char *op;
 }
 
-%token IF INT FLOAT VOID ELSE FOR WHILE DO BREAK CHAR DOUBLE RETURN SWITCH CASE DEFAULT CONTINUE PRINTLN INCOP DECOP NOT LPAREN RPAREN LCURL RCURL LTHIRD RTHIRD COMMA SEMICOLON
-%token <sym_info> ID CONST_INT CONST_FLOAT CONST_CHAR ERRFLT 
+%token IF INT FLOAT VOID ELSE FOR WHILE DO BREAK SWITCH CASE DEFAULT CONTINUE CHAR DOUBLE RETURN PRINTLN
+%token INCOP DECOP NOT LPAREN RPAREN LCURL RCURL LTHIRD RTHIRD COMMA SEMICOLON
+%token <sym_info> ID CONST_INT CONST_FLOAT CONST_CHAR 
 %token <op> ADDOP MULOP RELOP LOGICOP ASSIGNOP
-%type <pt>  start program unit variable var_declaration type_specifier func_declaration func_definition parameter_list
-%type <pt>  expression factor unary_expression term simple_expression rel_expression statement statements compound_statement logic_expression expression_statement
-%type <pt> arguments argument_list declaration_list
+%type <pt> start program unit func_definition parameter_list func_declaration variable var_declaration type_specifier
+%type <pt> logic_expression expression_statement expression term simple_expression compound_statement factor unary_expression
+%type <pt> arguments argument_list declaration_list rel_expression statement statements
 
 %nonassoc LOWER_THAN_ELSE
 %nonassoc ELSE
@@ -152,7 +153,7 @@ func_definition     :   type_specifier ID LPAREN parameter_list RPAREN
         sym->ret_type = $1->data;
     }
     else if(sym->is_func){ //in current scope, sym points to previously declared ID. Now validate
-        if(!sym->func_defined){ //was not defined previously, but ret_type, param fixed
+        if(!sym->func_defined){ //was not defined previously, but declared with ret_type, param_list
             sym->func_defined = true;
             bool param_len_match = sym->param_list.size()==param_holder.size();
             bool ret_type_match = sym->ret_type == $1->data;
@@ -185,6 +186,41 @@ func_definition     :   type_specifier ID LPAREN parameter_list RPAREN
     delete $2;
     delete $4;
     delete $7;
+}                   |   type_specifier ID LPAREN parameter_list error RPAREN
+{
+    param_holder.clear();
+    bool inserted = sym_tab.insert($2->getName(), $2->getType(), llo);
+    SymbolInfo* sym = sym_tab.lookUp($2->getName());
+    if(inserted){
+        sym->func_defined = true;
+        sym->is_func = true;
+        sym->ret_type = $1->data;
+    }
+    else if(sym->is_func){ //in current scope, sym points to previously declared ID. Now validate
+        if(!sym->func_defined){
+            sym->func_defined = true;
+            bool ret_type_match = sym->ret_type == $1->data;
+            if(!ret_type_match){
+                print_ret_type_mismatch($2->getName());
+            }
+        }else{
+            print_multidef_func($2->getName());
+        }
+    }else{
+        print_multidecl_var($2->getName());
+    }    
+}
+
+                        compound_statement
+{
+    match_func_ret_type(ret_type_holder, $1->data, $2->getName());
+    print_parser_grammar("func_definition", "type_specifier ID LPAREN RPAREN compound_statement");
+    $$ = new putil();
+    $$->data = $1->data + " " + $2->getName() + "(" + $4->data + ")" + $8->data;
+    print_parser_text($$->data);
+    delete $1;
+    delete $2;
+    delete $8;
 }
                     |   type_specifier ID LPAREN RPAREN
 {
@@ -375,6 +411,20 @@ declaration_list    :   declaration_list COMMA ID
     //----Finished symbol table insertion
     delete $1;
     delete $3;
+}                   |   declaration_list error COMMA ID
+{
+    $$ = new putil();
+    $$->data = $1->data + "," + $4->getName();
+    //----Symbol table insertion
+    bool inserted = sym_tab.insert($4->getName(), $4->getType(), llo);
+    if(inserted == false){
+        print_multidecl_var($4->getName());
+    }
+    print_parser_grammar("declaration_list", "declaration_list COMMA ID");
+    print_parser_text($$->data);
+    //----Finished symbol table insertion
+    delete $1;
+    delete $4;
 }
                     |   declaration_list COMMA ID LTHIRD CONST_INT RTHIRD
 {
@@ -438,6 +488,15 @@ statements          :   statement
     print_parser_text($$->data);
     delete $1;
     delete $2;
+}
+                    |   statements error statement
+{
+    print_parser_grammar("statements", "statements statement");
+    $$ = new putil();
+    $$->data = $1->data + "\n" + $3->data;
+    print_parser_text($$->data);
+    delete $1;
+    delete $3;
 }
                     ;
 statement           :   var_declaration
@@ -758,8 +817,8 @@ factor              :   variable
     }else{
         $$->type = sym->ret_type;
         if(!sym->is_func) print_not_a_func($1->getName()); //something other than function
-        else if(!sym->func_defined) print_undef_func($1->getName());//declared, not defined
-        else if(arg_type_holder.size()!=sym->param_list.size()){ //declared, defined, arglens no match
+        // else if(!sym->func_defined) print_undef_func($1->getName());//declared, not defined(decl enough)
+        else if(arg_type_holder.size()!=sym->param_list.size()){ //declared, defined?, arglens no match
             print_param_len_mismatch($1->getName());
         }else{ //arg lens matched, now validate
             validate_arg_type(sym, arg_type_holder);
