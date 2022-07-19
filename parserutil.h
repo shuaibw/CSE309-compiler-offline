@@ -221,14 +221,16 @@ void print_arg_mismatch(string name, int sn){
 bool match_param_type(string declared, string defined){
     if(declared == "int") return defined == "int";
     else if(declared == "float") return defined == "float";
-    else throw runtime_error("Invalid param type: " + declared +", "+ defined);
+    // else throw runtime_error("Invalid param type: " + declared +", "+ defined);
+    else return false;
 }
 bool match_arg_type(string defined, string passed){
     bool pint = (passed == "CONST_INT" || passed == "int" || passed == "ara_int");
     bool pflt = (passed == "float" || passed == "CONST_FLOAT" || passed == "ara_float");
     if(defined == "int") return pint;
     else if(defined == "float") return pint || pflt;
-    else throw runtime_error("Invalid arg type: " + defined +", "+ defined);
+    // else throw runtime_error("Invalid arg type: " + defined +", "+ defined);
+    else return false;
 }
 void validate_param_type(SymbolInfo* sym, vector<SymbolInfo> param_holder){
     for(int i=0;i<param_holder.size();i++){
