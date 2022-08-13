@@ -319,7 +319,7 @@ ERREMCHAR   ''("\n")?
                 print_log("CONTINUE", yytext, yylineno);
                 return CONTINUE;
             }
-"printf"    {
+"printf"|"println"    {
                 return PRINTLN;
             }
 

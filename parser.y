@@ -13,11 +13,18 @@ const char* PARSER_LOG_FILE = "./log.txt";
 const char* PARSER_ERR_FILE = "./error.txt";
 const char* LEX_LOG_FILE = "./lexlog.txt";
 const char* LEX_TOKEN_FILE = "./lextok.txt";
+const char* ASM_CODE_OUT = "./code.asm";
+const char* ASM_CODE_IN = "./asmlib.asm";
 ofstream plo(PARSER_LOG_FILE, ios::out); // parser log out
 ofstream peo(PARSER_ERR_FILE, ios::out); // parser error out
 ofstream llo(LEX_LOG_FILE, ios::out); // lex log out
 ofstream lto(LEX_TOKEN_FILE, ios::out); // lex token out
+ofstream aco(ASM_CODE_OUT, ios::out); //assemble code out
+ifstream aci(ASM_CODE_IN, ios::in); //read utility func
 int err_count = 0;
+int temp_count=0;
+int label_count=0;
+int stack_offset=0;
 SymbolTable sym_tab(7);
 vector<SymbolInfo> param_holder;
 vector<string> arg_type_holder;
@@ -58,6 +65,13 @@ start               :   program
     print_parser_grammar("start", "program");
     $$ = new putil();
     $$->data = $1->data;
+    string str;
+    aco << "\n\n";
+    aco << "; HELPER MODULES\n";
+    while(getline(aci, str)){
+        aco << str << "\n";
+    }
+    aci.close();
     delete $1;
 }
 program             :   program unit
@@ -173,6 +187,15 @@ func_definition     :   type_specifier ID LPAREN parameter_list RPAREN
         print_multidecl_var($2->getName());
     }
     // Don't clear params, to be inserted in function scope by compound_statement
+    //ICG func
+    aco << $2->getName() << " PROC\n";
+    if($2->getName() == "main"){
+        aco << "MOV AX, @DATA\nMOV DS, AX\n"
+            << "MOV BP, SP\n";
+    }else{
+        aco << "PUSH BP\nMOV BP, SP\n"
+            << "PUSH AX\nPUSH BX\nPUSH CX\n";
+    }
 }
                         compound_statement
 {
@@ -181,7 +204,13 @@ func_definition     :   type_specifier ID LPAREN parameter_list RPAREN
     $$ = new putil();
     $$->data = $1->data + " " + $2->getName() + "(" + $4->data + ")" + $7->data;
     print_parser_text($$->data);
-    
+    string code;
+    if($2->getName()=="main"){
+        code = "MOV AH, 004CH\nINT 21H\nmain ENDP\n";
+    }else{
+        code = "POP CX\nPOP BX\nPOP AX\nPOP BP\nRET\n";
+    }
+    aco << code;
     delete $1;
     delete $2;
     delete $4;
@@ -253,6 +282,14 @@ func_definition     :   type_specifier ID LPAREN parameter_list RPAREN
     $$ = new putil();
     $$->data = $1->data + " " + $2->getName() + "()" + $6->data;
     print_parser_text($$->data);
+
+    //ICG
+    string code = $2->getName() + "PROC\n";
+    if($2->getName()=="main"){
+        code+="MOV AX, @DATA\nMOV DS, AX\n";
+    }
+    
+
     delete $1;
     delete $2;
     delete $6;
@@ -355,6 +392,8 @@ var_declaration     :   type_specifier declaration_list SEMICOLON
         size_t loc = s.find("[");
         string name;
         string dtype;
+        //ICG var
+        bool is_ara = false;
         if(loc==string::npos) {
             name=s;
             dtype=$1->data;
@@ -362,10 +401,32 @@ var_declaration     :   type_specifier declaration_list SEMICOLON
         else {
             name=s.substr(0, loc);
             dtype="ara_"+$1->data;
+            is_ara = true; //ara_len already set in decl_list
         }
         SymbolInfo* sym = sym_tab.lookUp(name);
-        if(!sym->data_type.empty()) continue;
+        if(!sym->data_type.empty()) continue; // if second time declaration do nothing (error already printed)
         sym->data_type = dtype;
+        string code;
+        // 4 cases: global ara, global var, local ara, local var
+        if(sym->is_global){
+            sym->global_name = newTemp();
+            if (is_ara) code = sym->global_name + " DW " + sym->ara_len + " DUP (0) \
+                    ; declare variable " + name + "\n";
+            else code = sym->global_name + " DW 0 ; declare variable " + name + "\n";
+        }else if(is_ara){
+            stack_offset+=2;
+            code="PUSH 0 ; declare array " + name + ", offset: " + to_string(stack_offset) +"\n";
+            sym->offset = stack_offset;
+            for(int i=0; i< (stoi(sym->ara_len)-1);i++){
+                stack_offset+=2;
+                code+="PUSH 0\n";
+            }
+        }else{
+            stack_offset+=2;
+            code="PUSH 0 ; declare variable " + name + ", offset: " + to_string(stack_offset)+ "\n";
+            sym->offset = stack_offset;
+        }
+        aco << code;
     }
     delete $1;
     delete $2;
@@ -438,6 +499,10 @@ declaration_list    :   declaration_list COMMA ID
     print_parser_grammar("declaration_list", "declaration_list COMMA ID LTHIRD CONST_INT RTHIRD");
     print_parser_text($$->data);
     //-----Finished SymbolTable insertion
+
+    //ICG ara_len
+    SymbolInfo* sym = sym_tab.lookUp($3->getName());
+    sym->ara_len = $5->getName();
     delete $1;
     delete $3;
     delete $5;
@@ -572,6 +637,10 @@ statement           :   var_declaration
         print_undecl_var($3->getName());
     }
     print_parser_text($$->data);
+    //ICG PRINTLN
+    aco << "MOV AX, [BP-" << sym->offset << "]" << "\n"
+        << "CALL DAX" << " ; line " << yylineno 
+        << ": printf("<< $3->getName() << ")\n"; 
     delete $3;
 }
                     |   RETURN expression SEMICOLON
@@ -663,6 +732,9 @@ expression          :   logic_expression
     $$->data = $1->data + "=" + $3->data;
     $$->type = $3->type;
     print_parser_text($$->data);
+    //ICG ASSIGNOP
+    aco << "POP AX\nMOV [BP-"<<sym->offset<<"], AX ; line " << yylineno << ": "
+        << $1->data << " assigned\n";
     delete $1;
     delete $3;
 }
@@ -725,6 +797,13 @@ simple_expression   :   term
     $$->data = $1->data + $2 + $3->data;
     $$->type = upcast_type($1->type, $3->type);
     print_parser_text($$->data);
+    //ICG ADDOP
+    aco << "POP BX\nPOP AX\n";
+    if($2[0]=='+'){
+        aco <<"ADD AX, BX\nPUSH AX\n";
+    }else{
+        aco <<"SUB AX, BX\nPUSH AX\n";
+    }
     delete $1;
     delete $2;
     delete $3;
@@ -762,6 +841,19 @@ term                :   unary_expression
         $$->type = upcast_type($1->type, $3->type);
     }
     print_parser_text($$->data);
+    //ICG MUL
+    aco << "POP BX\nPOP AX\nCWD\n";
+    switch($2[0]){
+        case '*':
+            aco << "MUL BX\nPUSH AX\n";
+            break;
+        case '/':
+            aco << "DIV BX\nPUSH AX\n";
+            break;
+        case '%':
+            aco << "DIV BX\nPUSH DX\n";
+            break;
+    }
     delete $1;
     delete $2;
     delete $3;
@@ -774,6 +866,10 @@ unary_expression    :   ADDOP unary_expression
     $$->data = $1 + $2->data;
     $$->type = $2->type;
     print_parser_text($$->data);
+    //ICG ADDOP
+    if($1=="-"){
+        aco << "POP AX\nNEG AX\nPUSH AX\n";
+    }
     delete $1;
     delete $2;
 }
@@ -784,6 +880,8 @@ unary_expression    :   ADDOP unary_expression
     $$->data = "!"+$2->data;
     $$->type = $2->type;
     print_parser_text($$->data);
+    //ICG NOT
+    aco << "POP AX\nNOT AX\nPUSH AX\n";
     delete $2;
 }
                     |   factor
@@ -844,7 +942,9 @@ factor              :   variable
     $$ = new putil();
     $$->data = $1->getName();
     $$->type = "CONST_INT";
-    print_parser_text($$->data);
+    print_parser_text($$->data);  
+    //ICG CONST_INT
+    aco << "PUSH " + $1->getName() + "\n";
     delete $1;
 }
                     |   CONST_FLOAT
@@ -913,6 +1013,7 @@ arguments           :   arguments COMMA logic_expression
 
 main(int argc, char* argv[])
 {
+    init_asm_file();
     #ifdef YYDEBUG
     yydebug = 1;
     #endif
@@ -935,5 +1036,6 @@ main(int argc, char* argv[])
     fclose(fin);
     plo.close();
     peo.close();
+    aco.close();
     exit(0);
 }

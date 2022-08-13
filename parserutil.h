@@ -11,17 +11,35 @@ using namespace std;
 struct putil{
     string data;
     string type;
+    string code;
     putil(){}
 };
 extern ofstream plo;
 extern ofstream peo;
 extern ofstream llo;
 extern ofstream lto;
+extern ofstream aco;
 extern int yylineno;
 extern int err_count;
+extern int temp_count;
+extern int label_count;
 extern void yyerror(string s);
 
+string newLabel(){
+    return "@L"+to_string(label_count++);
+}
 
+string newTemp(){
+    return "t"+to_string(temp_count++);
+}
+
+void init_asm_file(){
+    aco << 
+".MODEL SMALL\n\
+.STACK 400H\n\
+.DATA\n\n\
+.CODE\n";
+}
 void console_log(string s){
     cout<<"\033[1;31m"<<s<<"\033[0m"<<endl;
 }

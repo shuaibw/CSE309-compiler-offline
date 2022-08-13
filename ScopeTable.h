@@ -118,6 +118,7 @@ public:
             pos++;
         }
         auto *symInfo = new SymbolInfo(name, type);
+        if(id=="1") symInfo->is_global = true; // needed for asm global variables
         if (prev == nullptr) symbols[idx] = symInfo;
         else prev->setNext(symInfo);
 

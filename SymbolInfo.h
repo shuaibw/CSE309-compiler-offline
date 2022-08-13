@@ -32,7 +32,12 @@ public:
     bool func_defined = false;
     bool is_func = false;
     std::vector<SymbolInfo> param_list;
-    //
+    // asm helper
+    int offset=-1; //offset from base pointer
+    bool is_global;
+    std::string global_name;
+    std::string ara_len; //if "" then not an array
+
 
     SymbolInfo(std::string name, std::string type) :
             name{std::move(name)},
