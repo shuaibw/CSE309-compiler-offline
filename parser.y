@@ -190,11 +190,11 @@ func_definition     :   type_specifier ID LPAREN parameter_list RPAREN
     //ICG func
     aco << $2->getName() << " PROC\n";
     if($2->getName() == "main"){
-        aco << "MOV AX, @DATA\nMOV DS, AX\n"
-            << "MOV BP, SP\n";
+        aco << "MOV AX, @DATA\nMOV DS, AX ; load data segment\n"
+            << "MOV BP, SP ; save stack pointer in BP\n";
     }else{
         aco << "PUSH BP\nMOV BP, SP\n"
-            << "PUSH AX\nPUSH BX\nPUSH CX\n";
+            << "PUSH AX\nPUSH BX\nPUSH CX ; save gprs\n";
     }
 }
                         compound_statement
@@ -204,13 +204,12 @@ func_definition     :   type_specifier ID LPAREN parameter_list RPAREN
     $$ = new putil();
     $$->data = $1->data + " " + $2->getName() + "(" + $4->data + ")" + $7->data;
     print_parser_text($$->data);
-    string code;
     if($2->getName()=="main"){
-        code = "MOV AH, 004CH\nINT 21H\nmain ENDP\n";
+        aco << "MOV AH, 004CH\nINT 21H\nmain ENDP\n";
     }else{
-        code = "POP CX\nPOP BX\nPOP AX\nPOP BP\nRET\n";
+        aco << "POP CX\nPOP BX\nPOP AX ; restore gprs\n"
+            << "POP BP ; restore base pointer\nRET\n";
     }
-    aco << code;
     delete $1;
     delete $2;
     delete $4;
@@ -274,6 +273,15 @@ func_definition     :   type_specifier ID LPAREN parameter_list RPAREN
     }else{
         print_multidecl_var($2->getName());
     }
+    //ICG func no param
+    aco << $2->getName() << " PROC\n";
+    if($2->getName() == "main"){
+        aco << "MOV AX, @DATA\nMOV DS, AX ; load data segment\n"
+            << "MOV BP, SP ; save stack pointer\n";
+    }else{
+        aco << "PUSH BP\nMOV BP, SP\n"
+            << "PUSH AX\nPUSH BX\nPUSH CX ; save gprs\n";
+    }
 }
                         compound_statement
 {
@@ -284,11 +292,12 @@ func_definition     :   type_specifier ID LPAREN parameter_list RPAREN
     print_parser_text($$->data);
 
     //ICG
-    string code = $2->getName() + "PROC\n";
     if($2->getName()=="main"){
-        code+="MOV AX, @DATA\nMOV DS, AX\n";
+        aco << "MOV AH, 004CH\nINT 21H\nmain ENDP\n";
+    }else{
+        aco << "POP CX\nPOP BX\nPOP AX ; restore gprs"
+            << "\nPOP BP ; restore base pointer\nRET\n";
     }
-    
 
     delete $1;
     delete $2;
@@ -415,7 +424,9 @@ var_declaration     :   type_specifier declaration_list SEMICOLON
             else code = sym->global_name + " DW 0 ; declare variable " + name + "\n";
         }else if(is_ara){
             stack_offset+=2;
-            code="PUSH 0 ; declare array " + name + ", offset: " + to_string(stack_offset) +"\n";
+            code="PUSH 0 ; line " + to_string(yylineno)+ 
+            " declare array " + name + ", offset: " + 
+            to_string(stack_offset) +"\n";
             sym->offset = stack_offset;
             for(int i=0; i< (stoi(sym->ara_len)-1);i++){
                 stack_offset+=2;
@@ -423,7 +434,9 @@ var_declaration     :   type_specifier declaration_list SEMICOLON
             }
         }else{
             stack_offset+=2;
-            code="PUSH 0 ; declare variable " + name + ", offset: " + to_string(stack_offset)+ "\n";
+            code="PUSH 0 ; line " + to_string(yylineno) + 
+            " declare variable " + name + ", offset: "+ 
+            to_string(stack_offset)+ "\n";
             sym->offset = stack_offset;
         }
         aco << code;
@@ -666,6 +679,8 @@ expression_statement    :   SEMICOLON
     $$ = new putil();
     $$->data = $1->data + ";";
     print_parser_text($$->data);
+    //ICG
+    aco << "POP AX ; expression end\n";
     delete $1;
 }
                         ;
@@ -684,7 +699,9 @@ variable            :   ID
         }
         $$->type = ret->data_type;
     }
-    print_parser_text($$->data);
+    // //ICG var
+    // aco << "MOV AX, [BP-"<<ret->offset<<"]\n"<<"PUSH AX\n";
+    // print_parser_text($$->data);
     delete $1;
 }
                     |   ID LTHIRD expression RTHIRD
@@ -704,6 +721,15 @@ variable            :   ID
     }
     $$->type = ret->data_type;
     print_parser_text($$->data);
+    //ICG ara
+    // int start_offset = ret->offset;
+    // aco <<"POP AX\n" //contains expression
+    //     <<"MOV BX, 2"<<"\n"
+    //     <<"CWD\nMUL AX\n" //ax contains 2*expression
+    //     <<"MOV BX, "<<start_offset<<"\n"
+    //     <<"ADD AX, BX\n" //ax contains proper offset
+    //     <<"PUSH [BP-AX]\n";
+
     delete $1;
     delete $3;
 }
@@ -721,9 +747,7 @@ expression          :   logic_expression
 {
     print_parser_grammar("expression", "variable ASSIGNOP logic_expression");
     string v = $1->data;
-    size_t loc = v.find("[");
-    string var_name = loc==string::npos? v : v.substr(0, loc);
-    SymbolInfo* sym = sym_tab.lookUp(var_name);
+    SymbolInfo* sym = parse_var($1->data);
     if($3->type=="void") print_void_func_in_expr(); //don't check anything else
     else if(sym!=nullptr && !match_types(sym->data_type, $3->type)){ //was declared before, but type mismatch
         print_type_mismatch();
@@ -733,8 +757,23 @@ expression          :   logic_expression
     $$->type = $3->type;
     print_parser_text($$->data);
     //ICG ASSIGNOP
-    aco << "POP AX\nMOV [BP-"<<sym->offset<<"], AX ; line " << yylineno << ": "
-        << $1->data << " assigned\n";
+    bool is_ara = sym->data_type.find("ara")!=string::npos;
+    if(is_ara){ // ID[expr] = logic_expr
+        aco << "POP CX ; line " << yylineno << " cx = rhs\n"
+            << "POP AX ; ax = ara index for " << $1->data << "\n"
+            << "MOV BX, 2\n"
+            << "CWD\n" << "MUL BX ; ax = 2*ara idx\n"
+            << "MOV SI, " << sym->offset << " ; si = ara base offset\n"
+            << "ADD SI, AX ; SI = proper offset for " << $1->data <<"\n"
+            << "NEG SI\n"
+            << "MOV [BP+SI], CX ; " << $1->data << " assigned\n"
+            << "PUSH CX ; "<< $$->data <<"expression stored\n";
+            //won't work with sub bx, ax; mov [bx], cx!
+            //bx has ds as segment address, bp has ss
+    }else{
+        aco << "POP AX\nMOV [BP-"<<sym->offset<<"], AX ; line " << yylineno << ": "
+            << $1->data << " assigned\nPUSH AX ; " << $$->data << " expression stored\n";
+    }
     delete $1;
     delete $3;
 }
@@ -749,12 +788,39 @@ logic_expression    :   rel_expression
     delete $1;
 }
                     |   rel_expression LOGICOP rel_expression
-{
+{   //short circuit baki
     print_parser_grammar("logic_expression", "rel_expression LOGICOP rel_expression");
     $$ = new putil();
     $$->data = $1->data + $2 + $3->data;
     $$->type = "CONST_INT";
     print_parser_text($$->data);
+    //ICG logicop
+    aco << "POP BX ; line " << yylineno << " logicop\n"
+        << "POP AX\n";
+    string exit_label = newLabel();
+    string logic_label = newLabel();
+    string logicop($2);
+    if(logicop=="&&"){
+        aco << "CMP AX, 0\n"
+            << "JE " << logic_label <<"\n"
+            << "CMP BX, 0\n"
+            << "JE " << logic_label <<"\n"
+            << "PUSH 1\n" // true
+            << "JMP " << exit_label << "\n"
+            << logic_label << ":\n"
+            << "PUSH 0\n"
+            << exit_label <<": ; " << $$->data << " parsed \n";
+    }else{
+        aco << "CMP AX, 0\n"
+            << "JNE " << logic_label <<"\n"
+            << "CMP BX, 0\n"
+            << "JNE " << logic_label <<"\n"
+            << "PUSH 0\n" //false
+            << "JMP " << exit_label << "\n"
+            << logic_label <<":\n"
+            << "PUSH 1\n"
+            << exit_label <<": ; " << $$->data << " parsed \n";
+    }
     delete $1;
     delete $2;
     delete $3;
@@ -776,6 +842,28 @@ rel_expression      :   simple_expression
     $$->data = $1->data + $2 + $3->data;
     $$->type = "CONST_INT";
     print_parser_text($$->data);
+    string relop($2);
+    //ICG relop
+    aco << "POP BX ; line " << yylineno << " relop \n" << "POP AX\n"
+        << "CMP AX, BX\n";
+    string true_label = newLabel();
+    string false_label = newLabel();
+    if(relop=="<="){ //ZF=1 || SF!=OF
+        aco << "JLE " << true_label << "\n";
+    }else if(relop==">="){ // SF=OF
+        aco << "JGE " << true_label << "\n";
+    }else if(relop=="<"){ // SF!=OF
+        aco << "JL " << true_label << "\n";
+    }else if(relop==">"){ // ZF=0 && SF=OF
+        aco << "JG " << true_label << "\n";
+    }else if(relop=="=="){ // ZF=1
+        aco << "JE " << true_label << "\n";
+    }else if(relop=="!="){ //ZF=0
+        aco << "JNE " << true_label << "\n";
+    }
+    aco << "PUSH 0\n" << "JMP " << false_label << "\n"
+    << true_label << ":\nPUSH 1\n" << false_label <<": ; "
+    << $$->data <<" parsed\n";
     delete $1;
     delete $2;
     delete $3;
@@ -842,7 +930,7 @@ term                :   unary_expression
     }
     print_parser_text($$->data);
     //ICG MUL
-    aco << "POP BX\nPOP AX\nCWD\n";
+    aco << "POP BX\nPOP AX\nCWD ; line " << yylineno << " MULOP\n";
     switch($2[0]){
         case '*':
             aco << "MUL BX\nPUSH AX\n";
@@ -867,7 +955,7 @@ unary_expression    :   ADDOP unary_expression
     $$->type = $2->type;
     print_parser_text($$->data);
     //ICG ADDOP
-    if($1=="-"){
+    if($1[0]=='-'){
         aco << "POP AX\nNEG AX\nPUSH AX\n";
     }
     delete $1;
@@ -901,6 +989,22 @@ factor              :   variable
     $$->data = $1->data;
     $$->type = $1->type;
     print_parser_text($$->data);
+
+    //ICG var
+    SymbolInfo* sym=parse_var($1->data);
+    bool is_ara= sym->data_type.find("ara")!=string::npos;
+    if(is_ara){
+    aco <<"POP AX ; ax = ara idx for " << $1->data << "\n" //contains expression: ID [expr]
+        <<"MOV BX, 2"<<"\n"
+        <<"CWD\nMUL BX ; ax = 2*ara idx\n" //ax contains 2*expression
+        <<"MOV SI, "<<sym->offset<<" ; si = ara base offset\n"
+        <<"ADD SI, AX ; proper offset for " << $1->data << "\n" //si contains proper offset
+        <<"NEG SI\n"
+        <<"PUSH [BP+SI] ; " << $1->data <<" pushed in stack\n";
+    }else{
+        aco << "MOV AX, [BP-"<<sym->offset<<"]\n" 
+            << "PUSH AX ; " << $1->data << " pushed in stack \n";
+    }
     delete $1;
 }
                     |   ID LPAREN argument_list RPAREN
@@ -963,6 +1067,21 @@ factor              :   variable
     $$->data = $1->data + "++";
     $$->type = "INCOP";
     print_parser_text($$->data);
+    //ICG incop
+    SymbolInfo* sym=parse_var($1->data);
+    bool is_ara = sym->data_type.find("ara")!=string::npos;
+    if(is_ara){
+        aco << "POP AX ; ax=idx of " << $1->data << "\n"
+        << "SHL AX, 1 ; ax=2*idx\n"
+        << "MOV SI, " << sym->offset << " ; si=base offset \n"
+        << "ADD SI, AX ; si=proper offset\n"
+        << "NEG SI\n"
+        << "PUSH [BP+SI] ; " << $1->data << " pushed in stack\n"
+        << "INC [BP+SI]\n"; 
+    }else{
+        aco << "PUSH [BP-"<<sym->offset<<"] ; " << $1->data << "pushed\n"
+        << "INC [BP-"<<sym->offset<<"]\n"; 
+    }
     delete $1;
 }
                     |   variable DECOP
@@ -972,6 +1091,21 @@ factor              :   variable
     $$->data = $1->data + "--";
     $$->type = "DECOP";
     print_parser_text($$->data);
+    //ICG decop
+    SymbolInfo* sym=parse_var($1->data);
+    bool is_ara = sym->data_type.find("ara")!=string::npos;
+    if(is_ara){
+        aco << "POP AX ; ax=idx of " << $1->data << "\n"
+        << "SHL AX, 1 ; ax=2*idx\n"
+        << "MOV SI, " << sym->offset << " ; si=base offset \n"
+        << "ADD SI, AX ; si=proper offset\n"
+        << "NEG SI\n"
+        << "PUSH [BP+SI] ; " << $1->data << " pushed in stack\n"
+        << "DEC [BP+SI]\n"; 
+    }else{
+        aco << "PUSH [BP-"<<sym->offset<<"] ; " << $1->data << "pushed\n"
+        << "DEC [BP-"<<sym->offset<<"]\n"; 
+    }
     delete $1;
 }
                     ;          

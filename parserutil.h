@@ -19,6 +19,7 @@ extern ofstream peo;
 extern ofstream llo;
 extern ofstream lto;
 extern ofstream aco;
+extern SymbolTable sym_tab;
 extern int yylineno;
 extern int err_count;
 extern int temp_count;
@@ -42,6 +43,15 @@ void init_asm_file(){
 }
 void console_log(string s){
     cout<<"\033[1;31m"<<s<<"\033[0m"<<endl;
+}
+
+SymbolInfo* parse_var(string data){
+    int lthird=data.find("[");
+    if(lthird!=string::npos){ //is an array
+        string var_name = data.substr(0, lthird);
+        return sym_tab.lookUp(var_name);
+    }
+    return sym_tab.lookUp(data); 
 }
 
 void print_parser_grammar(const char* left, const char* right){

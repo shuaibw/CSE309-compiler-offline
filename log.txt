@@ -2,14 +2,6 @@ Line 1: type_specifier : INT
 
 int
 
-Line 1: type_specifier : INT
-
-int
-
-Line 1: parameter_list : type_specifier ID
-
-int x
-
 Line 2: type_specifier : INT
 
 int
@@ -18,468 +10,167 @@ Line 2: declaration_list : ID
 
 a
 
+Line 2: declaration_list : declaration_list COMMA ID
+
+a,b
+
 Line 2: var_declaration : type_specifier declaration_list SEMICOLON
 
-int a;
+int a,b;
 
 Line 2: statement : var_declaration
 
-int a;
+int a,b;
 
 Line 2: statements : statement
 
-int a;
+int a,b;
 
-Line 3: type_specifier : INT
+Line 3: variable : ID
 
-int
+Line 3: factor : CONST_INT
 
-Line 3: declaration_list : ID
+1
 
-b
+Line 3: unary_expression : factor
 
-Line 3: var_declaration : type_specifier declaration_list SEMICOLON
+1
 
-int b;
+Line 3: term : unary_expression
 
-Line 3: statement : var_declaration
+1
 
-int b;
+Line 3: simple_expression : term
+
+1
+
+Line 3: rel_expression : simple_expression
+
+1
+
+Line 3: variable : ID
+
+Line 3: factor : CONST_INT
+
+2
+
+Line 3: unary_expression : factor
+
+2
+
+Line 3: term : unary_expression
+
+2
+
+Line 3: simple_expression : term
+
+2
+
+Line 3: rel_expression : simple_expression
+
+2
+
+Line 3: logic_expression : rel_expression
+
+2
+
+Line 3: expression : variable ASSIGNOP logic_expression
+
+a=2
+
+Line 3: factor : LPAREN expression RPAREN
+
+(a=2)
+
+Line 3: unary_expression : factor
+
+(a=2)
+
+Line 3: term : unary_expression
+
+(a=2)
+
+Line 3: simple_expression : term
+
+(a=2)
+
+Line 3: rel_expression : simple_expression
+
+(a=2)
+
+Line 3: logic_expression : rel_expression LOGICOP rel_expression
+
+1||(a=2)
+
+Line 3: expression : variable ASSIGNOP logic_expression
+
+b=1||(a=2)
+
+Line 3: expression_statement : expression SEMICOLON
+
+b=1||(a=2);
+
+Line 3: statement : expression_statement
+
+b=1||(a=2);
 
 Line 3: statements : statements statement
 
-int a;
-int b;
+int a,b;
+b=1||(a=2);
 
-Line 4: variable : ID
+Line 4: statement : PRINTLN LPAREN ID RPAREN SEMICOLON
 
-b
-
-Line 4: factor : CONST_INT
-
-1
-
-Line 4: unary_expression : factor
-
-1
-
-Line 4: term : unary_expression
-
-1
-
-Line 4: simple_expression : term
-
-1
-
-Line 4: factor : CONST_INT
-
-2
-
-Line 4: unary_expression : factor
-
-2
-
-Line 4: term : unary_expression
-
-2
-
-Line 4: simple_expression : simple_expression ADDOP term
-
-1+2
-
-Line 4: rel_expression : simple_expression
-
-1+2
-
-Line 4: logic_expression : rel_expression
-
-1+2
-
-Line 4: expression : variable ASSIGNOP logic_expression
-
-b=1+2
-
-Line 4: expression_statement : expression SEMICOLON
-
-b=1+2;
-
-Line 4: statement : expression_statement
-
-b=1+2;
+printf(a);
 
 Line 4: statements : statements statement
 
-int a;
-int b;
-b=1+2;
-
-Line 5: variable : ID
-
-a
-
-Line 5: factor : CONST_INT
-
-3
-
-Line 5: unary_expression : factor
-
-3
-
-Line 5: term : unary_expression
-
-3
-
-Line 5: simple_expression : term
-
-3
-
-Line 5: factor : CONST_INT
-
-4
-
-Line 5: unary_expression : factor
-
-4
-
-Line 5: term : unary_expression
-
-4
-
-Line 5: simple_expression : simple_expression ADDOP term
-
-3+4
-
-Line 5: rel_expression : simple_expression
-
-3+4
-
-Line 5: logic_expression : rel_expression
-
-3+4
-
-Line 5: expression : variable ASSIGNOP logic_expression
-
-a=3+4
-
-Line 5: expression_statement : expression SEMICOLON
-
-a=3+4;
-
-Line 5: statement : expression_statement
-
-a=3+4;
-
-Line 5: statements : statements statement
-
-int a;
-int b;
-b=1+2;
-a=3+4;
-
-Line 6: statement : PRINTLN LPAREN ID RPAREN SEMICOLON
-
+int a,b;
+b=1||(a=2);
 printf(a);
 
-Line 6: statements : statements statement
-
-int a;
-int b;
-b=1+2;
-a=3+4;
-printf(a);
-
-Line 7: statement : PRINTLN LPAREN ID RPAREN SEMICOLON
-
-printf(b);
-
-Line 7: statements : statements statement
-
-int a;
-int b;
-b=1+2;
-a=3+4;
-printf(a);
-printf(b);
-
-Line 8: variable : ID
-
-a
-
-Line 8: factor : CONST_INT
-
-3
-
-Line 8: unary_expression : factor
-
-3
-
-Line 8: term : unary_expression
-
-3
-
-Line 8: factor : CONST_INT
-
-7
-
-Line 8: unary_expression : factor
-
-7
-
-Line 8: term : term MULOP unary_expression
-
-3*7
-
-Line 8: simple_expression : term
-
-3*7
-
-Line 8: rel_expression : simple_expression
-
-3*7
-
-Line 8: logic_expression : rel_expression
-
-3*7
-
-Line 8: expression : variable ASSIGNOP logic_expression
-
-a=3*7
-
-Line 8: expression_statement : expression SEMICOLON
-
-a=3*7;
-
-Line 8: statement : expression_statement
-
-a=3*7;
-
-Line 8: statements : statements statement
-
-int a;
-int b;
-b=1+2;
-a=3+4;
-printf(a);
-printf(b);
-a=3*7;
-
-Line 9: variable : ID
-
-b
-
-Line 9: factor : CONST_INT
-
-8
-
-Line 9: unary_expression : factor
-
-8
-
-Line 9: term : unary_expression
-
-8
-
-Line 9: factor : CONST_INT
-
-8
-
-Line 9: unary_expression : factor
-
-8
-
-Line 9: term : term MULOP unary_expression
-
-8*8
-
-Line 9: simple_expression : term
-
-8*8
-
-Line 9: rel_expression : simple_expression
-
-8*8
-
-Line 9: logic_expression : rel_expression
-
-8*8
-
-Line 9: expression : variable ASSIGNOP logic_expression
-
-b=8*8
-
-Line 9: expression_statement : expression SEMICOLON
-
-b=8*8;
-
-Line 9: statement : expression_statement
-
-b=8*8;
-
-Line 9: statements : statements statement
-
-int a;
-int b;
-b=1+2;
-a=3+4;
-printf(a);
-printf(b);
-a=3*7;
-b=8*8;
-
-Line 10: statement : PRINTLN LPAREN ID RPAREN SEMICOLON
-
-printf(a);
-
-Line 10: statements : statements statement
-
-int a;
-int b;
-b=1+2;
-a=3+4;
-printf(a);
-printf(b);
-a=3*7;
-b=8*8;
-printf(a);
-
-Line 11: statement : PRINTLN LPAREN ID RPAREN SEMICOLON
-
-printf(b);
-
-Line 11: statements : statements statement
-
-int a;
-int b;
-b=1+2;
-a=3+4;
-printf(a);
-printf(b);
-a=3*7;
-b=8*8;
-printf(a);
-printf(b);
-
-Line 12: factor : CONST_INT
-
-0
-
-Line 12: unary_expression : factor
-
-0
-
-Line 12: term : unary_expression
-
-0
-
-Line 12: simple_expression : term
-
-0
-
-Line 12: rel_expression : simple_expression
-
-0
-
-Line 12: logic_expression : rel_expression
-
-0
-
-Line 12: expression : logic_expression
-
-0
-
-Line 12: statement : RETURN expression SEMICOLON
-
-return 0;
-
-Line 12: statements : statements statement
-
-int a;
-int b;
-b=1+2;
-a=3+4;
-printf(a);
-printf(b);
-a=3*7;
-b=8*8;
-printf(a);
-printf(b);
-return 0;
-
-Line 13: compound_statement : LCURL statements RCURL
+Line 5: compound_statement : LCURL statements RCURL
 
 {
-int a;
-int b;
-b=1+2;
-a=3+4;
+int a,b;
+b=1||(a=2);
 printf(a);
-printf(b);
-a=3*7;
-b=8*8;
-printf(a);
-printf(b);
-return 0;
 }
 
 ScopeTable # 1.1
 0 --> < b : ID >
-1 --> < x : ID >
 6 --> < a : ID >
 ScopeTable # 1
 6 --> < main : ID >
 
-Line 13: func_definition : type_specifier ID LPAREN parameter_list RPAREN compound_statement
+Line 5: func_definition : type_specifier ID LPAREN RPAREN compound_statement
 
-int main(int x){
-int a;
-int b;
-b=1+2;
-a=3+4;
+int main(){
+int a,b;
+b=1||(a=2);
 printf(a);
-printf(b);
-a=3*7;
-b=8*8;
-printf(a);
-printf(b);
-return 0;
 }
 
-Line 13: unit : func_definition
+Line 5: unit : func_definition
 
-int main(int x){
-int a;
-int b;
-b=1+2;
-a=3+4;
+int main(){
+int a,b;
+b=1||(a=2);
 printf(a);
-printf(b);
-a=3*7;
-b=8*8;
-printf(a);
-printf(b);
-return 0;
 }
 
-Line 13: program : unit
+Line 5: program : unit
 
-int main(int x){
-int a;
-int b;
-b=1+2;
-a=3+4;
+int main(){
+int a,b;
+b=1||(a=2);
 printf(a);
-printf(b);
-a=3*7;
-b=8*8;
-printf(a);
-printf(b);
-return 0;
 }
 
-Line 13: start : program
+Line 5: start : program
 
 ScopeTable # 1
 6 --> < main : ID >
 
-Total number of lines: 13
+Total number of lines: 5
 Total number of errors: 0
