@@ -188,13 +188,14 @@ func_definition     :   type_specifier ID LPAREN parameter_list RPAREN
     }
     // Don't clear params, to be inserted in function scope by compound_statement
     //ICG func
+    stack_offset=0;
     aco << $2->getName() << " PROC\n";
     if($2->getName() == "main"){
         aco << "MOV AX, @DATA\nMOV DS, AX ; load data segment\n"
             << "MOV BP, SP ; save stack pointer in BP\n";
     }else{
-        aco << "PUSH BP\nMOV BP, SP\n"
-            << "PUSH AX\nPUSH BX\nPUSH CX ; save gprs\n";
+        aco << "PUSH AX\nPUSH BX\nPUSH CX ; save gprs\n"
+            << "PUSH BP\nMOV BP, SP ; save stack pointer\n"  ;
     }
 }
                         compound_statement
@@ -204,11 +205,15 @@ func_definition     :   type_specifier ID LPAREN parameter_list RPAREN
     $$ = new putil();
     $$->data = $1->data + " " + $2->getName() + "(" + $4->data + ")" + $7->data;
     print_parser_text($$->data);
+    //ICG func end
+    SymbolInfo* sym = sym_tab.lookUp($2->getName());
     if($2->getName()=="main"){
         aco << "MOV AH, 004CH\nINT 21H\nmain ENDP\n";
     }else{
-        aco << "POP CX\nPOP BX\nPOP AX ; restore gprs\n"
-            << "POP BP ; restore base pointer\nRET\n";
+        aco << "MOV SP, BP ; restore stack pointer\n"
+            << "POP BP\nPOP CX\nPOP BX\nPOP AX ; restore registers \n"
+            << "RET " << sym->param_list.size() + 2 << " ; offset+2 stack to clean up parameters\n"
+            << $2->getName() << "ENDP\n\n";
     }
     delete $1;
     delete $2;
@@ -274,13 +279,14 @@ func_definition     :   type_specifier ID LPAREN parameter_list RPAREN
         print_multidecl_var($2->getName());
     }
     //ICG func no param
+    stack_offset=0;
     aco << $2->getName() << " PROC\n";
     if($2->getName() == "main"){
         aco << "MOV AX, @DATA\nMOV DS, AX ; load data segment\n"
             << "MOV BP, SP ; save stack pointer\n";
     }else{
-        aco << "PUSH BP\nMOV BP, SP\n"
-            << "PUSH AX\nPUSH BX\nPUSH CX ; save gprs\n";
+        aco << "PUSH AX\nPUSH BX\nPUSH CX ; save gprs\n"
+            << "PUSH BP ; save bp\nMOV BP, SP\n"  ;
     }
 }
                         compound_statement
@@ -295,8 +301,9 @@ func_definition     :   type_specifier ID LPAREN parameter_list RPAREN
     if($2->getName()=="main"){
         aco << "MOV AH, 004CH\nINT 21H\nmain ENDP\n";
     }else{
-        aco << "POP CX\nPOP BX\nPOP AX ; restore gprs"
-            << "\nPOP BP ; restore base pointer\nRET\n";
+        aco << "MOV SP, BP ; restore stack pointer\n"
+            << "POP CX\nPOP BX\nPOP AX\nPOP BP ; restore registers \n"
+            << "RET\n\n";
     }
 
     delete $1;
@@ -354,10 +361,13 @@ compound_statement  :   LCURL
 { //Now insert function parameters to scope table if they exist
     sym_tab.enterScope();
     if(!param_holder.empty()){ //param holder contains function
+        int offset= -8 - param_holder.size() * 2;
         for(const auto &sym: param_holder) {
             bool inserted = sym_tab.insert(sym.getName(), "ID", llo);
-            
-            sym_tab.lookUp(sym.getName())->data_type = sym.getType();
+            SymbolInfo* p = sym_tab.lookUp(sym.getName());
+            p->data_type = sym.getType();
+            p->offset=offset;
+            offset+=2;
         }
     }
     param_holder.clear();
@@ -419,9 +429,10 @@ var_declaration     :   type_specifier declaration_list SEMICOLON
         // 4 cases: global ara, global var, local ara, local var
         if(sym->is_global){
             sym->global_name = newTemp();
-            if (is_ara) code = sym->global_name + " DW " + sym->ara_len + " DUP (0) \
-                    ; declare variable " + name + "\n";
+            if (is_ara) code = sym->global_name + " DW " + sym->ara_len 
+            + " DUP (0) ; declare variable " + name + "\n";
             else code = sym->global_name + " DW 0 ; declare variable " + name + "\n";
+            
         }else if(is_ara){
             stack_offset+=2;
             code="PUSH 0 ; line " + to_string(yylineno)+ 
@@ -441,6 +452,7 @@ var_declaration     :   type_specifier declaration_list SEMICOLON
         }
         aco << code;
     }
+    aco << ".CODE\n";   
     delete $1;
     delete $2;
 }
@@ -663,6 +675,8 @@ statement           :   var_declaration
     $$->data = "return " + $2->data + ";";
     ret_type_holder.push_back($2->type);
     print_parser_text($$->data);
+    //ICG return
+    aco << "POP DX ; save return value in dx\n";
     delete $2;
 }
                     ;
@@ -767,7 +781,7 @@ expression          :   logic_expression
             << "ADD SI, AX ; SI = proper offset for " << $1->data <<"\n"
             << "NEG SI\n"
             << "MOV [BP+SI], CX ; " << $1->data << " assigned\n"
-            << "PUSH CX ; "<< $$->data <<"expression stored\n";
+            << "PUSH CX ; "<< $$->data <<" expression stored\n";
             //won't work with sub bx, ax; mov [bx], cx!
             //bx has ds as segment address, bp has ss
     }else{
@@ -1002,8 +1016,7 @@ factor              :   variable
         <<"NEG SI\n"
         <<"PUSH [BP+SI] ; " << $1->data <<" pushed in stack\n";
     }else{
-        aco << "MOV AX, [BP-"<<sym->offset<<"]\n" 
-            << "PUSH AX ; " << $1->data << " pushed in stack \n";
+        aco << "PUSH [BP-"<<sym->offset<<"] ; " << $1->data << " pushed in stack \n"; 
     }
     delete $1;
 }
@@ -1028,6 +1041,9 @@ factor              :   variable
     }
     arg_type_holder.clear();
     print_parser_text($$->data);
+    //ICG func call
+    aco << "CALL " << $1->getName() << " ; line " << yylineno << " , function call\n"
+        << "PUSH DX ; return value pushed\n";
     delete $1;
     delete $3;
 }

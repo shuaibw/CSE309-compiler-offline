@@ -38,8 +38,7 @@ void init_asm_file(){
     aco << 
 ".MODEL SMALL\n\
 .STACK 400H\n\
-.DATA\n\n\
-.CODE\n";
+.DATA\n";
 }
 void console_log(string s){
     cout<<"\033[1;31m"<<s<<"\033[0m"<<endl;

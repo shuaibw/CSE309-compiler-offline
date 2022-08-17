@@ -2,175 +2,704 @@ Line 1: type_specifier : INT
 
 int
 
+Line 1: declaration_list : ID
+
+p
+
+Line 1: declaration_list : declaration_list COMMA ID
+
+p,q
+
+Line 1: declaration_list : declaration_list COMMA ID LTHIRD CONST_INT RTHIRD
+
+p,q,r[5]
+
+Line 1: var_declaration : type_specifier declaration_list SEMICOLON
+
+int p,q,r[5];
+
+Line 1: unit : var_declaration
+
+int p,q,r[5];
+
+Line 1: program : unit
+
+int p,q,r[5];
+
 Line 2: type_specifier : INT
 
 int
 
-Line 2: declaration_list : ID
+Line 2: type_specifier : INT
 
-a
+int
 
-Line 2: declaration_list : declaration_list COMMA ID
+Line 2: parameter_list : type_specifier ID
 
-a,b
+int a
 
-Line 2: var_declaration : type_specifier declaration_list SEMICOLON
+Line 2: type_specifier : INT
 
-int a,b;
+int
 
-Line 2: statement : var_declaration
+Line 2: parameter_list : parameter_list COMMA type_specifier ID
 
-int a,b;
-
-Line 2: statements : statement
-
-int a,b;
+int a,int b
 
 Line 3: variable : ID
 
 Line 3: factor : CONST_INT
 
-1
+9
 
 Line 3: unary_expression : factor
 
-1
+9
 
 Line 3: term : unary_expression
 
-1
+9
 
 Line 3: simple_expression : term
 
-1
+9
 
 Line 3: rel_expression : simple_expression
 
-1
-
-Line 3: variable : ID
-
-Line 3: factor : CONST_INT
-
-2
-
-Line 3: unary_expression : factor
-
-2
-
-Line 3: term : unary_expression
-
-2
-
-Line 3: simple_expression : term
-
-2
-
-Line 3: rel_expression : simple_expression
-
-2
+9
 
 Line 3: logic_expression : rel_expression
 
-2
+9
 
 Line 3: expression : variable ASSIGNOP logic_expression
 
-a=2
-
-Line 3: factor : LPAREN expression RPAREN
-
-(a=2)
-
-Line 3: unary_expression : factor
-
-(a=2)
-
-Line 3: term : unary_expression
-
-(a=2)
-
-Line 3: simple_expression : term
-
-(a=2)
-
-Line 3: rel_expression : simple_expression
-
-(a=2)
-
-Line 3: logic_expression : rel_expression LOGICOP rel_expression
-
-1||(a=2)
-
-Line 3: expression : variable ASSIGNOP logic_expression
-
-b=1||(a=2)
+p=9
 
 Line 3: expression_statement : expression SEMICOLON
 
-b=1||(a=2);
+p=9;
 
 Line 3: statement : expression_statement
 
-b=1||(a=2);
+p=9;
 
-Line 3: statements : statements statement
+Line 3: statements : statement
 
-int a,b;
-b=1||(a=2);
+p=9;
 
-Line 4: statement : PRINTLN LPAREN ID RPAREN SEMICOLON
+Line 4: type_specifier : INT
 
-printf(a);
+int
+
+Line 4: declaration_list : ID
+
+z
+
+Line 4: var_declaration : type_specifier declaration_list SEMICOLON
+
+int z;
+
+Line 4: statement : var_declaration
+
+int z;
 
 Line 4: statements : statements statement
 
-int a,b;
-b=1||(a=2);
-printf(a);
+p=9;
+int z;
 
-Line 5: compound_statement : LCURL statements RCURL
+Line 5: variable : ID
+
+Line 5: factor : CONST_INT
+
+2
+
+Line 5: unary_expression : factor
+
+2
+
+Line 5: term : unary_expression
+
+2
+
+Line 5: variable : ID
+
+Line 5: factor : variable
+
+a
+
+Line 5: unary_expression : factor
+
+a
+
+Line 5: term : term MULOP unary_expression
+
+2*a
+
+Line 5: simple_expression : term
+
+2*a
+
+Line 5: factor : CONST_INT
+
+3
+
+Line 5: unary_expression : factor
+
+3
+
+Line 5: term : unary_expression
+
+3
+
+Line 5: variable : ID
+
+Line 5: factor : variable
+
+b
+
+Line 5: unary_expression : factor
+
+b
+
+Line 5: term : term MULOP unary_expression
+
+3*b
+
+Line 5: simple_expression : simple_expression ADDOP term
+
+2*a+3*b
+
+Line 5: rel_expression : simple_expression
+
+2*a+3*b
+
+Line 5: logic_expression : rel_expression
+
+2*a+3*b
+
+Line 5: expression : variable ASSIGNOP logic_expression
+
+z=2*a+3*b
+
+Line 5: expression_statement : expression SEMICOLON
+
+z=2*a+3*b;
+
+Line 5: statement : expression_statement
+
+z=2*a+3*b;
+
+Line 5: statements : statements statement
+
+p=9;
+int z;
+z=2*a+3*b;
+
+Line 6: variable : ID
+
+Line 6: factor : variable
+
+z
+
+Line 6: unary_expression : factor
+
+z
+
+Line 6: term : unary_expression
+
+z
+
+Line 6: simple_expression : term
+
+z
+
+Line 6: rel_expression : simple_expression
+
+z
+
+Line 6: logic_expression : rel_expression
+
+z
+
+Line 6: expression : logic_expression
+
+z
+
+Line 6: statement : RETURN expression SEMICOLON
+
+return z;
+
+Line 6: statements : statements statement
+
+p=9;
+int z;
+z=2*a+3*b;
+return z;
+
+Line 7: compound_statement : LCURL statements RCURL
 
 {
-int a,b;
-b=1||(a=2);
-printf(a);
+p=9;
+int z;
+z=2*a+3*b;
+return z;
 }
 
 ScopeTable # 1.1
 0 --> < b : ID >
+3 --> < z : ID >
 6 --> < a : ID >
 ScopeTable # 1
+0 --> < p : ID >
+1 --> < q : ID >
+2 --> < r : ID >
+4 --> < foo : ID >
+
+Line 7: func_definition : type_specifier ID LPAREN parameter_list RPAREN compound_statement
+
+int foo(int a,int b){
+p=9;
+int z;
+z=2*a+3*b;
+return z;
+}
+
+Line 7: unit : func_definition
+
+int foo(int a,int b){
+p=9;
+int z;
+z=2*a+3*b;
+return z;
+}
+
+Line 7: program : program unit
+
+int p,q,r[5];
+int foo(int a,int b){
+p=9;
+int z;
+z=2*a+3*b;
+return z;
+}
+
+Line 8: type_specifier : INT
+
+int
+
+Line 9: type_specifier : INT
+
+int
+
+Line 9: declaration_list : ID
+
+x
+
+Line 9: declaration_list : declaration_list COMMA ID
+
+x,y
+
+Line 9: var_declaration : type_specifier declaration_list SEMICOLON
+
+int x,y;
+
+Line 9: statement : var_declaration
+
+int x,y;
+
+Line 9: statements : statement
+
+int x,y;
+
+Line 10: variable : ID
+
+Line 10: factor : CONST_INT
+
+2
+
+Line 10: unary_expression : factor
+
+2
+
+Line 10: term : unary_expression
+
+2
+
+Line 10: simple_expression : term
+
+2
+
+Line 10: rel_expression : simple_expression
+
+2
+
+Line 10: logic_expression : rel_expression
+
+2
+
+Line 10: expression : variable ASSIGNOP logic_expression
+
+x=2
+
+Line 10: expression_statement : expression SEMICOLON
+
+x=2;
+
+Line 10: statement : expression_statement
+
+x=2;
+
+Line 10: statements : statements statement
+
+int x,y;
+x=2;
+
+Line 11: variable : ID
+
+Line 11: factor : CONST_INT
+
+5
+
+Line 11: unary_expression : factor
+
+5
+
+Line 11: term : unary_expression
+
+5
+
+Line 11: simple_expression : term
+
+5
+
+Line 11: rel_expression : simple_expression
+
+5
+
+Line 11: logic_expression : rel_expression
+
+5
+
+Line 11: expression : variable ASSIGNOP logic_expression
+
+y=5
+
+Line 11: expression_statement : expression SEMICOLON
+
+y=5;
+
+Line 11: statement : expression_statement
+
+y=5;
+
+Line 11: statements : statements statement
+
+int x,y;
+x=2;
+y=5;
+
+Line 12: type_specifier : INT
+
+int
+
+Line 12: declaration_list : ID
+
+val
+
+Line 12: var_declaration : type_specifier declaration_list SEMICOLON
+
+int val;
+
+Line 12: statement : var_declaration
+
+int val;
+
+Line 12: statements : statements statement
+
+int x,y;
+x=2;
+y=5;
+int val;
+
+Line 13: variable : ID
+
+Line 13: variable : ID
+
+Line 13: factor : variable
+
+x
+
+Line 13: unary_expression : factor
+
+x
+
+Line 13: term : unary_expression
+
+x
+
+Line 13: simple_expression : term
+
+x
+
+Line 13: rel_expression : simple_expression
+
+x
+
+Line 13: logic_expression : rel_expression
+
+x
+
+Line 13: arguments : logic_expression
+
+x
+
+Line 13: variable : ID
+
+Line 13: factor : variable
+
+y
+
+Line 13: unary_expression : factor
+
+y
+
+Line 13: term : unary_expression
+
+y
+
+Line 13: simple_expression : term
+
+y
+
+Line 13: rel_expression : simple_expression
+
+y
+
+Line 13: logic_expression : rel_expression
+
+y
+
+Line 13: arguments : arguments COMMA logic_expression
+
+x,y
+
+Line 13: argument_list : arguments
+
+x,y
+
+Line 13: factor : ID LPAREN argument_list RPAREN
+
+foo(x,y)
+
+Line 13: unary_expression : factor
+
+foo(x,y)
+
+Line 13: term : unary_expression
+
+foo(x,y)
+
+Line 13: simple_expression : term
+
+foo(x,y)
+
+Line 13: rel_expression : simple_expression
+
+foo(x,y)
+
+Line 13: logic_expression : rel_expression
+
+foo(x,y)
+
+Line 13: expression : variable ASSIGNOP logic_expression
+
+val=foo(x,y)
+
+Line 13: expression_statement : expression SEMICOLON
+
+val=foo(x,y);
+
+Line 13: statement : expression_statement
+
+val=foo(x,y);
+
+Line 13: statements : statements statement
+
+int x,y;
+x=2;
+y=5;
+int val;
+val=foo(x,y);
+
+Line 14: statement : PRINTLN LPAREN ID RPAREN SEMICOLON
+
+printf(val);
+
+Line 14: statements : statements statement
+
+int x,y;
+x=2;
+y=5;
+int val;
+val=foo(x,y);
+printf(val);
+
+Line 15: statement : PRINTLN LPAREN ID RPAREN SEMICOLON
+
+printf(x);
+
+Line 15: statements : statements statement
+
+int x,y;
+x=2;
+y=5;
+int val;
+val=foo(x,y);
+printf(val);
+printf(x);
+
+Line 16: statement : PRINTLN LPAREN ID RPAREN SEMICOLON
+
+printf(y);
+
+Line 16: statements : statements statement
+
+int x,y;
+x=2;
+y=5;
+int val;
+val=foo(x,y);
+printf(val);
+printf(x);
+printf(y);
+
+Line 17: factor : CONST_INT
+
+0
+
+Line 17: unary_expression : factor
+
+0
+
+Line 17: term : unary_expression
+
+0
+
+Line 17: simple_expression : term
+
+0
+
+Line 17: rel_expression : simple_expression
+
+0
+
+Line 17: logic_expression : rel_expression
+
+0
+
+Line 17: expression : logic_expression
+
+0
+
+Line 17: statement : RETURN expression SEMICOLON
+
+return 0;
+
+Line 17: statements : statements statement
+
+int x,y;
+x=2;
+y=5;
+int val;
+val=foo(x,y);
+printf(val);
+printf(x);
+printf(y);
+return 0;
+
+Line 18: compound_statement : LCURL statements RCURL
+
+{
+int x,y;
+x=2;
+y=5;
+int val;
+val=foo(x,y);
+printf(val);
+printf(x);
+printf(y);
+return 0;
+}
+
+ScopeTable # 1.2
+1 --> < x : ID >< val : ID >
+2 --> < y : ID >
+ScopeTable # 1
+0 --> < p : ID >
+1 --> < q : ID >
+2 --> < r : ID >
+4 --> < foo : ID >
 6 --> < main : ID >
 
-Line 5: func_definition : type_specifier ID LPAREN RPAREN compound_statement
+Line 18: func_definition : type_specifier ID LPAREN RPAREN compound_statement
 
 int main(){
-int a,b;
-b=1||(a=2);
-printf(a);
+int x,y;
+x=2;
+y=5;
+int val;
+val=foo(x,y);
+printf(val);
+printf(x);
+printf(y);
+return 0;
 }
 
-Line 5: unit : func_definition
+Line 18: unit : func_definition
 
 int main(){
-int a,b;
-b=1||(a=2);
-printf(a);
+int x,y;
+x=2;
+y=5;
+int val;
+val=foo(x,y);
+printf(val);
+printf(x);
+printf(y);
+return 0;
 }
 
-Line 5: program : unit
+Line 18: program : program unit
 
+int p,q,r[5];
+int foo(int a,int b){
+p=9;
+int z;
+z=2*a+3*b;
+return z;
+}
 int main(){
-int a,b;
-b=1||(a=2);
-printf(a);
+int x,y;
+x=2;
+y=5;
+int val;
+val=foo(x,y);
+printf(val);
+printf(x);
+printf(y);
+return 0;
 }
 
-Line 5: start : program
+Line 19: start : program
 
 ScopeTable # 1
+0 --> < p : ID >
+1 --> < q : ID >
+2 --> < r : ID >
+4 --> < foo : ID >
 6 --> < main : ID >
 
-Total number of lines: 5
+Total number of lines: 19
 Total number of errors: 0
