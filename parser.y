@@ -25,6 +25,15 @@ int err_count = 0;
 int temp_count=0;
 int label_count=0;
 int stack_offset=0;
+// for loop labels
+string for_check;
+string for_update;
+string for_body;
+string for_exit;
+//while loop labels
+string while_check;
+string while_body;
+string while_exit;
 SymbolTable sym_tab(7);
 vector<SymbolInfo> param_holder;
 vector<string> arg_type_holder;
@@ -195,7 +204,7 @@ func_definition     :   type_specifier ID LPAREN parameter_list RPAREN
             << "MOV BP, SP ; save stack pointer in BP\n";
     }else{
         aco << "PUSH AX\nPUSH BX\nPUSH CX ; save gprs\n"
-            << "PUSH BP\nMOV BP, SP ; save stack pointer\n"  ;
+            << "PUSH BP\nMOV BP, SP ; save stack pointer\n";
     }
 }
                         compound_statement
@@ -212,8 +221,8 @@ func_definition     :   type_specifier ID LPAREN parameter_list RPAREN
     }else{
         aco << "MOV SP, BP ; restore stack pointer\n"
             << "POP BP\nPOP CX\nPOP BX\nPOP AX ; restore registers \n"
-            << "RET " << sym->param_list.size() + 2 << " ; offset+2 stack to clean up parameters\n"
-            << $2->getName() << "ENDP\n\n";
+            << "RET " << sym->param_list.size()*2 << " ; offset stack to clean up parameters\n"
+            << $2->getName() << " ENDP\n\n";
     }
     delete $1;
     delete $2;
@@ -302,8 +311,8 @@ func_definition     :   type_specifier ID LPAREN parameter_list RPAREN
         aco << "MOV AH, 004CH\nINT 21H\nmain ENDP\n";
     }else{
         aco << "MOV SP, BP ; restore stack pointer\n"
-            << "POP CX\nPOP BX\nPOP AX\nPOP BP ; restore registers \n"
-            << "RET\n\n";
+            << "POP BP\nPOP CX\nPOP BX\nPOP AX ; restore registers \n"
+            << "RET\n" << $2->getName()<< " ENDP\n\n";
     }
 
     delete $1;
@@ -452,7 +461,6 @@ var_declaration     :   type_specifier declaration_list SEMICOLON
         }
         aco << code;
     }
-    aco << ".CODE\n";   
     delete $1;
     delete $2;
 }
@@ -613,16 +621,43 @@ statement           :   var_declaration
     print_parser_text($$->data);
     delete $1;
 }
-                    |   FOR LPAREN expression_statement expression_statement expression RPAREN statement
+                    |   FOR LPAREN expression_statement
+{
+    for_check=newLabel();
+    for_body=newLabel();
+    for_update=newLabel();
+    for_exit=newLabel();
+    aco << for_check << ": ; condition check label\n";
+}
+                        expression_statement
+{
+    aco << "CMP AX, 0\n" // expression_statement popped in AX
+        << "JNE " << for_body << " ; if true then enter body\n"
+        << "JMP " << for_exit << " ; else exit\n"
+        << for_update << ": ; update label\n";
+} 
+                        expression
+{
+    aco << "POP AX ; pop update expression\n"; //since no semicolon
+    aco << "JMP " << for_check <<" ; check if condition holds\n";
+}
+                        RPAREN
+{
+    aco << for_body << ": ; for body label\n";
+} 
+                        statement
 {
     print_parser_grammar("statement", "FOR LPAREN expression_statement expression_statement expression RPAREN statement");
     $$ = new putil();
-    $$->data = "for(" + $3->data + $4->data + $5->data + ")" + $7->data;
+    $$->data = "for(" + $3->data + $5->data + $7->data + ")" + $11->data;
     print_parser_text($$->data);
+    //ICG for
+    aco << "JMP " << for_update <<"\n"
+        << for_exit << ":\n";
     delete $3;
-    delete $4;
     delete $5;
     delete $7;
+    delete $11;
 }
                     |   IF LPAREN expression RPAREN statement %prec LOWER_THAN_ELSE
 {
@@ -643,14 +678,34 @@ statement           :   var_declaration
     delete $5;
     delete $7;
 }
-                    |   WHILE LPAREN expression RPAREN statement
+                    |   WHILE LPAREN
+{
+    while_check=newLabel();
+    while_body=newLabel();
+    while_exit=newLabel();
+    aco << while_check << ": ; while condition check label\n";
+}
+                        expression
+{
+    aco << "POP AX ; pop condition value\n"; // since no semicolon, expression remains in stack
+    aco << "CMP AX, 0\n"
+        << "JNE " << while_body<<"\n"
+        << "JMP " << while_exit <<"\n";
+} 
+                        RPAREN
+{
+    aco << while_body << ": ; while body label\n";
+}
+                        statement
 {
     print_parser_grammar("statement", "WHILE LPAREN expression RPAREN statement");
     $$ = new putil();
-    $$->data = "while(" + $3->data + ")" + $5->data;
+    $$->data = "while(" + $4->data + ")" + $8->data;
     print_parser_text($$->data);
-    delete $3;
-    delete $5;
+    aco << "JMP " << while_check << "\n"
+        << while_exit << ": ; while exit label\n";
+    delete $4;
+    delete $8;
 }
                     |   PRINTLN LPAREN ID RPAREN SEMICOLON
 {
@@ -663,8 +718,13 @@ statement           :   var_declaration
     }
     print_parser_text($$->data);
     //ICG PRINTLN
-    aco << "MOV AX, [BP-" << sym->offset << "]" << "\n"
-        << "CALL DAX" << " ; line " << yylineno 
+
+    if(sym->is_global){
+        aco << "MOV AX, " << sym->global_name << "\n";
+    }else{
+        aco << "MOV AX, [BP-" << sym->offset << "]" << "\n";
+    }
+    aco << "CALL DAX" << " ; line " << yylineno 
         << ": printf("<< $3->getName() << ")\n"; 
     delete $3;
 }
@@ -775,18 +835,28 @@ expression          :   logic_expression
     if(is_ara){ // ID[expr] = logic_expr
         aco << "POP CX ; line " << yylineno << " cx = rhs\n"
             << "POP AX ; ax = ara index for " << $1->data << "\n"
-            << "MOV BX, 2\n"
-            << "CWD\n" << "MUL BX ; ax = 2*ara idx\n"
-            << "MOV SI, " << sym->offset << " ; si = ara base offset\n"
+            << "SHL AX, 1 ; ax = 2*ara idx\n";
+
+        if(sym->is_global){
+            aco << "MOV BX, AX\n"
+            << "MOV ["<<sym->global_name<<"+BX], CX\n";
+        }else{
+            aco << "MOV SI, " << sym->offset << " ; si = ara base offset\n"
             << "ADD SI, AX ; SI = proper offset for " << $1->data <<"\n"
             << "NEG SI\n"
-            << "MOV [BP+SI], CX ; " << $1->data << " assigned\n"
-            << "PUSH CX ; "<< $$->data <<" expression stored\n";
+            << "MOV [BP+SI], CX ; " << $1->data << " assigned\n";
+        }
+            aco << "PUSH CX ; "<< $$->data <<" expression stored\n";
             //won't work with sub bx, ax; mov [bx], cx!
             //bx has ds as segment address, bp has ss
     }else{
-        aco << "POP AX\nMOV [BP-"<<sym->offset<<"], AX ; line " << yylineno << ": "
-            << $1->data << " assigned\nPUSH AX ; " << $$->data << " expression stored\n";
+        aco << "POP AX\n";
+        if(sym->is_global){
+            aco << "MOV " << sym->global_name << ", AX ; line " << yylineno << ": "<< $1->data << " assigned\n";   
+        }else{
+            aco << "MOV [BP-"<<sym->offset<<"], AX ; line " << yylineno << ": "<< $1->data << " assigned\n";
+        }
+        aco << "PUSH AX ; " << $$->data << " expression stored\n";
     }
     delete $1;
     delete $3;
@@ -1009,14 +1079,25 @@ factor              :   variable
     bool is_ara= sym->data_type.find("ara")!=string::npos;
     if(is_ara){
     aco <<"POP AX ; ax = ara idx for " << $1->data << "\n" //contains expression: ID [expr]
-        <<"MOV BX, 2"<<"\n"
-        <<"CWD\nMUL BX ; ax = 2*ara idx\n" //ax contains 2*expression
-        <<"MOV SI, "<<sym->offset<<" ; si = ara base offset\n"
-        <<"ADD SI, AX ; proper offset for " << $1->data << "\n" //si contains proper offset
-        <<"NEG SI\n"
-        <<"PUSH [BP+SI] ; " << $1->data <<" pushed in stack\n";
+        <<"SHL AX, 1 ; ax = 2*ara idx\n"; //ax contains 2*expression
+
+        if(sym->is_global){
+            aco << "MOV BX, AX\n"
+                << "PUSH ["<<sym->global_name<<"+BX] ;" << $1->data << " pushed in stack \n";
+        }else{
+            aco <<"MOV SI, "<<sym->offset<<" ; si = ara base offset\n"
+            <<"ADD SI, AX ; proper offset for " << $1->data << "\n" //si contains proper offset
+            <<"NEG SI\n"
+            <<"PUSH [BP+SI] ; " << $1->data <<" pushed in stack\n";
+        }
+
     }else{
-        aco << "PUSH [BP-"<<sym->offset<<"] ; " << $1->data << " pushed in stack \n"; 
+        if(sym->is_global){
+            aco << "PUSH " << sym->global_name << $1->data << " ; pushed in stack \n";
+        }
+        else{
+            aco << "PUSH [BP-"<<sym->offset<<"] ; " << $1->data << " pushed in stack \n"; 
+        }
     }
     delete $1;
 }
@@ -1042,8 +1123,8 @@ factor              :   variable
     arg_type_holder.clear();
     print_parser_text($$->data);
     //ICG func call
-    aco << "CALL " << $1->getName() << " ; line " << yylineno << " , function call\n"
-        << "PUSH DX ; return value pushed\n";
+    aco << "CALL " << $1->getName() << " ; line " << yylineno << " , function call\n";
+    aco << "PUSH DX ; return value pushed\n";
     delete $1;
     delete $3;
 }
@@ -1088,15 +1169,27 @@ factor              :   variable
     bool is_ara = sym->data_type.find("ara")!=string::npos;
     if(is_ara){
         aco << "POP AX ; ax=idx of " << $1->data << "\n"
-        << "SHL AX, 1 ; ax=2*idx\n"
-        << "MOV SI, " << sym->offset << " ; si=base offset \n"
-        << "ADD SI, AX ; si=proper offset\n"
-        << "NEG SI\n"
-        << "PUSH [BP+SI] ; " << $1->data << " pushed in stack\n"
-        << "INC [BP+SI]\n"; 
+        << "SHL AX, 1 ; ax=2*idx\n";
+        if(sym->is_global){
+            aco << "MOV BX, AX\n"
+            << "PUSH ["<<sym->global_name<<"+BX] ; " << $1->data << " pushed in stack\n"
+            << "INC WORD PTR["<<sym->global_name<<"+BX]\n";
+        }else{
+            aco << "MOV SI, " << sym->offset << " ; si=base offset \n"
+            << "ADD SI, AX ; si=proper offset\n"
+            << "NEG SI\n"
+            << "PUSH [BP+SI] ; " << $1->data << " pushed in stack\n"
+            << "INC WORD PTR[BP+SI]\n";
+        } 
     }else{
-        aco << "PUSH [BP-"<<sym->offset<<"] ; " << $1->data << "pushed\n"
-        << "INC [BP-"<<sym->offset<<"]\n"; 
+        if(sym->is_global){
+            aco << "PUSH " <<sym->global_name << " ; " << $1->data << " pushed\n"
+                << "INC WORD PTR["<<sym->global_name<<"+BX]\n";
+        }else{
+            aco << "PUSH [BP-"<<sym->offset<<"] ; " << $1->data << " pushed\n"
+                << "INC WORD PTR[BP-"<<sym->offset<<"]\n"; 
+        }
+        
     }
     delete $1;
 }
@@ -1112,15 +1205,26 @@ factor              :   variable
     bool is_ara = sym->data_type.find("ara")!=string::npos;
     if(is_ara){
         aco << "POP AX ; ax=idx of " << $1->data << "\n"
-        << "SHL AX, 1 ; ax=2*idx\n"
-        << "MOV SI, " << sym->offset << " ; si=base offset \n"
-        << "ADD SI, AX ; si=proper offset\n"
-        << "NEG SI\n"
-        << "PUSH [BP+SI] ; " << $1->data << " pushed in stack\n"
-        << "DEC [BP+SI]\n"; 
+        << "SHL AX, 1 ; ax=2*idx\n";
+        if(sym->is_global){
+            aco << "MOV BX, AX\n"
+            << "PUSH ["<<sym->global_name<<"+BX] ; " << $1->data << " pushed in stack\n"
+            << "DEC WORD PTR["<<sym->global_name<<"+BX]\n";
+        }else{
+            aco << "MOV SI, " << sym->offset << " ; si=base offset \n"
+            << "ADD SI, AX ; si=proper offset\n"
+            << "NEG SI\n"
+            << "PUSH [BP+SI] ; " << $1->data << " pushed in stack\n"
+            << "DEC WORD PTR[BP+SI]\n";
+        } 
     }else{
-        aco << "PUSH [BP-"<<sym->offset<<"] ; " << $1->data << "pushed\n"
-        << "DEC [BP-"<<sym->offset<<"]\n"; 
+        if(sym->is_global){
+            aco << "PUSH " <<sym->global_name << " ; " << $1->data << " pushed\n"
+                << "DEC WORD PTR["<<sym->global_name<<"+BX]\n";
+        }else{
+            aco << "PUSH [BP-"<<sym->offset<<"] ; " << $1->data << " pushed\n"
+            << "DEC WORD PTR[BP-"<<sym->offset<<"]\n"; 
+        }
     }
     delete $1;
 }
