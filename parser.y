@@ -34,6 +34,9 @@ string for_exit;
 string while_check;
 string while_body;
 string while_exit;
+//if else labels
+string elselabel;
+string exitlabel;
 SymbolTable sym_tab(7);
 vector<SymbolInfo> param_holder;
 vector<string> arg_type_holder;
@@ -62,7 +65,7 @@ int yyparse(void);
 %token <op> ADDOP MULOP RELOP LOGICOP ASSIGNOP
 %type <pt> start program unit func_definition parameter_list func_declaration variable var_declaration type_specifier
 %type <pt> logic_expression expression_statement expression term simple_expression compound_statement factor unary_expression
-%type <pt> arguments argument_list declaration_list rel_expression statement statements
+%type <pt> arguments argument_list declaration_list rel_expression statement statements dummy
 
 %nonassoc LOWER_THAN_ELSE
 %nonassoc ELSE
@@ -597,6 +600,22 @@ statements          :   statement
     delete $3;
 }
                     ;
+dummy               :   IF LPAREN expression
+{
+    elselabel=newLabel();
+    aco << "POP AX\n"
+        << "CMP AX, 0\n"
+        << "JE " << elselabel << "\n";
+}
+                        RPAREN statement
+{
+    $$=new putil();
+    $$->data="if(" + $3->data + ")" + $6->data;
+    exitlabel=newLabel();
+    aco << "JMP " << exitlabel <<"\n";
+    delete $3;
+    delete $6;
+}
 statement           :   var_declaration
 {
     print_parser_grammar("statement", "var_declaration");
@@ -659,24 +678,29 @@ statement           :   var_declaration
     delete $7;
     delete $11;
 }
-                    |   IF LPAREN expression RPAREN statement %prec LOWER_THAN_ELSE
+                    |   dummy %prec LOWER_THAN_ELSE
 {
     print_parser_grammar("statement", "IF LPAREN expression RPAREN statement");
     $$ = new putil();
-    $$->data = "if(" + $3->data + ")" + $5->data;
+    $$->data = $1->data;
     print_parser_text($$->data);
-    delete $3;
-    delete $5;
+
+    aco << exitlabel << ": ; if condition false\n";
+    delete $1;
 }
-                    |   IF LPAREN expression RPAREN statement ELSE statement
+                    |   dummy ELSE
+{
+    aco << elselabel <<": ; else block \n";
+}
+                        statement
 {
     print_parser_grammar("statement", "IF LPAREN expression RPAREN statement ELSE statement");
     $$ = new putil();
-    $$->data = "if(" + $3->data + ")" + $5->data + "else " + $7->data;
+    $$->data = $1->data + "else " + $4->data;
     print_parser_text($$->data);
-    delete $3;
-    delete $5;
-    delete $7;
+    aco << "JMP " << exitlabel<<"\n";
+    delete $1;
+    delete $4;
 }
                     |   WHILE LPAREN
 {
