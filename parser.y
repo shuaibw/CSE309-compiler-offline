@@ -37,6 +37,9 @@ string while_exit;
 //if else labels
 string elselabel;
 vector<string> exitlabels;
+//return jump for recursion
+string retlabel;
+
 SymbolTable sym_tab(7);
 vector<SymbolInfo> param_holder;
 vector<string> arg_type_holder;
@@ -170,6 +173,7 @@ func_declaration    :   type_specifier ID LPAREN parameter_list RPAREN SEMICOLON
                     ;
 func_definition     :   type_specifier ID LPAREN parameter_list RPAREN 
 {   //Function scope not entered yet, insert function to global scope
+    retlabel=newLabel();
     bool inserted = sym_tab.insert($2->getName(), $2->getType(), llo);
     SymbolInfo* sym = sym_tab.lookUp($2->getName());
     if(inserted){ //first time definition
@@ -219,6 +223,8 @@ func_definition     :   type_specifier ID LPAREN parameter_list RPAREN
     print_parser_text($$->data);
     //ICG func end
     SymbolInfo* sym = sym_tab.lookUp($2->getName());
+    aco << retlabel << ": ; to handle recursion\n";
+    retlabel.clear();
     if($2->getName()=="main"){
         aco << "MOV AH, 004CH\nINT 21H\nmain ENDP\n";
     }else{
@@ -269,6 +275,7 @@ func_definition     :   type_specifier ID LPAREN parameter_list RPAREN
 }
                     |   type_specifier ID LPAREN RPAREN
 {
+    retlabel=newLabel();
     bool inserted = sym_tab.insert($2->getName(), $2->getType(), llo);
     SymbolInfo* sym = sym_tab.lookUp($2->getName());
     if(inserted){
@@ -310,6 +317,8 @@ func_definition     :   type_specifier ID LPAREN parameter_list RPAREN
     print_parser_text($$->data);
 
     //ICG
+    aco << retlabel << ": ; to handle recursion\n";
+    retlabel.clear();
     if($2->getName()=="main"){
         aco << "MOV AH, 004CH\nINT 21H\nmain ENDP\n";
     }else{
@@ -767,7 +776,8 @@ statement           :   var_declaration
     ret_type_holder.push_back($2->type);
     print_parser_text($$->data);
     //ICG return
-    aco << "POP DX ; save return value in dx\n";
+    aco << "POP DX ; save return value in dx\n"
+        << "JMP " << retlabel <<"\n";
     delete $2;
 }
                     ;
