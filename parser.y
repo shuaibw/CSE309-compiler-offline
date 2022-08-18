@@ -36,7 +36,7 @@ string while_body;
 string while_exit;
 //if else labels
 string elselabel;
-string exitlabel;
+vector<string> exitlabels;
 SymbolTable sym_tab(7);
 vector<SymbolInfo> param_holder;
 vector<string> arg_type_holder;
@@ -611,7 +611,8 @@ dummy               :   IF LPAREN expression
 {
     $$=new putil();
     $$->data="if(" + $3->data + ")" + $6->data;
-    exitlabel=newLabel();
+    string exitlabel=newLabel();
+    exitlabels.push_back(exitlabel);
     aco << "JMP " << exitlabel <<"\n";
     delete $3;
     delete $6;
@@ -684,8 +685,8 @@ statement           :   var_declaration
     $$ = new putil();
     $$->data = $1->data;
     print_parser_text($$->data);
-
-    aco << exitlabel << ": ; if condition false\n";
+    aco << exitlabels.back() << ": ; if condition false\n";
+    exitlabels.pop_back();
     delete $1;
 }
                     |   dummy ELSE
@@ -698,7 +699,8 @@ statement           :   var_declaration
     $$ = new putil();
     $$->data = $1->data + "else " + $4->data;
     print_parser_text($$->data);
-    aco << "JMP " << exitlabel<<"\n";
+    aco  << exitlabels.back() <<":\n";
+    exitlabels.pop_back();
     delete $1;
     delete $4;
 }
