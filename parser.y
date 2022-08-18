@@ -686,12 +686,17 @@ statement           :   var_declaration
     $$->data = $1->data;
     print_parser_text($$->data);
     aco << exitlabels.back() << ": ; if condition false\n";
+    if(!elselabel.empty()){
+        aco<<elselabel<<":\n";
+        elselabel.clear();
+    }
     exitlabels.pop_back();
     delete $1;
 }
                     |   dummy ELSE
 {
     aco << elselabel <<": ; else block \n";
+    elselabel.clear();
 }
                         statement
 {
