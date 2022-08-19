@@ -1,14 +1,18 @@
+int foo(int a, int b){
+	if(a+b <= 5){
+		return 7;
+	}
+	return foo(a-2,b-1) + 2*foo(a-1,b-2);
+}
+ 
+ 
 int main(){
-    int a,b,c,i;
-    b=0;
-	c=1;
-    for(i=0;i<4;i++){
-        a=3;
-        while(a--){
-            b++;
-        }
-    }
-    println(a);
-    println(b);
-    println(c);
+	int i,j,k;
+	i = 7;
+	j = 3;
+ 
+	k = foo(i,j);
+	println(k);
+ 
+	return 0;
 }
