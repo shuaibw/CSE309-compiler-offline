@@ -15,6 +15,7 @@ const char* LEX_LOG_FILE = "./lexlog.txt";
 const char* LEX_TOKEN_FILE = "./lextok.txt";
 const char* ASM_CODE_OUT = "./code.asm";
 const char* ASM_CODE_IN = "./asmlib.asm";
+const char* ASM_CODE_OPTIM = "./optimized_code.asm";
 ofstream plo(PARSER_LOG_FILE, ios::out); // parser log out
 ofstream peo(PARSER_ERR_FILE, ios::out); // parser error out
 ofstream llo(LEX_LOG_FILE, ios::out); // lex log out
@@ -1332,5 +1333,6 @@ main(int argc, char* argv[])
     plo.close();
     peo.close();
     aco.close();
+    peep_optimize();
     exit(0);
 }

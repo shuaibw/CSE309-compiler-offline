@@ -13,3 +13,8 @@ echo 'Generated the scanner object file'
 g++ y.o l.o -lfl -o scanner
 echo 'All ready, running'
 ./scanner input.c
+echo "Running optimization"
+g++ optimize.cpp -o optimize
+./optimize
+echo "Optimization complete! Cleaning up"
+rm -f optimize

@@ -19,6 +19,8 @@ extern ofstream peo;
 extern ofstream llo;
 extern ofstream lto;
 extern ofstream aco;
+extern const char* ASM_CODE_OPTIM;
+extern const char* ASM_CODE_OUT;
 extern SymbolTable sym_tab;
 extern int yylineno;
 extern int err_count;
@@ -39,6 +41,15 @@ void init_asm_file(){
 ".MODEL SMALL\n\
 .STACK 400H\n\
 .DATA\n";
+}
+void peep_optimize(){
+    ifstream fin(ASM_CODE_OUT, ios::in);
+    ofstream fout(ASM_CODE_OPTIM, ios::out);
+    std::string line;
+    while (std::getline(fin, line))
+    {
+        
+    }
 }
 void console_log(string s){
     cout<<"\033[1;31m"<<s<<"\033[0m"<<endl;

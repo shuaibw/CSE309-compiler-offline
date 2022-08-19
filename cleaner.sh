@@ -6,3 +6,8 @@ rm -f l.o
 rm -f lex.yy.c
 rm -f parser.output
 rm -f code.asm
+rm -f optimized_code_1.asm
+rm -f optimized_code.asm
+rm -f lexlog.txt
+rm -f lextok.txt
+rm -f log.txt
