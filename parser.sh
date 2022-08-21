@@ -2,14 +2,14 @@
 
 ./cleaner.sh
 bison -v --debug --defines=y.tab.h -Wconflicts-sr 1805010.y
-echo 'Cooked bison 😵‍💫'
+echo 'Bison generated 🦬'
 g++ -w -c -o y.o 1805010.tab.c
-echo 'Bison object file compiled 😍'
+echo 'Bison object file compiled 🥩'
 flex 1805010.l
-echo 'Lexxer cooked 🍪'
+echo 'Lex object generated 🖨️'
 g++ -w -c -o l.o lex.yy.c
 # if the above command doesn't work try g++ -fpermissive -w -c -o l.o lex.yy.c
-echo 'Lexer object file compiled ╰(*°▽°*)╯'
+echo 'Lexer object file compiled 📄'
 g++ y.o l.o -lfl -o scanner
 echo 'Scanner compiled! Generating code... 🚀'
 ./scanner input.c
@@ -19,5 +19,5 @@ g++ optimize.cpp -o optimize
 echo "Optimization complete! Cleaning up...🧹"
 rm -f optimize
 ./cleaner.sh
-echo "Please refer to code.asm and optimized_code.asm 🍔"
-echo "Further optimized code is in final_code.asm 👾"
+echo "Please refer to code.asm and optimized_code.asm 💻"
+echo "Further optimized code is in final_code.asm 🖥️"
