@@ -42,15 +42,6 @@ void init_asm_file(){
 .STACK 400H\n\
 .DATA\n";
 }
-void peep_optimize(){
-    ifstream fin(ASM_CODE_OUT, ios::in);
-    ofstream fout(ASM_CODE_OPTIM, ios::out);
-    std::string line;
-    while (std::getline(fin, line))
-    {
-        
-    }
-}
 void console_log(string s){
     cout<<"\033[1;31m"<<s<<"\033[0m"<<endl;
 }

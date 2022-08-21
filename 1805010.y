@@ -456,15 +456,12 @@ var_declaration     :   type_specifier declaration_list SEMICOLON
             else code = sym->global_name + " DW 0 ; declare variable " + name + "\n";
             
         }else if(is_ara){
-            stack_offset+=2;
-            code="PUSH 0 ; line " + to_string(yylineno)+ 
+            int stack_depth = 2*stoi(sym->ara_len);
+            code="SUB SP, " + to_string(stack_depth) + " ; line " + to_string(yylineno)+ 
             " declare array " + name + ", offset: " + 
-            to_string(stack_offset) +"\n";
-            sym->offset = stack_offset;
-            for(int i=0; i< (stoi(sym->ara_len)-1);i++){
-                stack_offset+=2;
-                code+="PUSH 0\n";
-            }
+            to_string(stack_offset + 2) +"\n";
+            sym->offset = stack_offset + 2;
+            stack_offset+=stack_depth;
         }else{
             stack_offset+=2;
             code="PUSH 0 ; line " + to_string(yylineno) + 
@@ -579,6 +576,9 @@ declaration_list    :   declaration_list COMMA ID
     print_parser_grammar("declaration_list", "ID LTHIRD CONST_INT RTHIRD");
     print_parser_text($$->data);
     //------Finished SymbolTable insertion
+    //ICG ara len
+    SymbolInfo* sym = sym_tab.lookUp($1->getName());
+    sym->ara_len = $3->getName();
     delete $1;
     delete $3;
 }
@@ -1059,13 +1059,14 @@ term                :   unary_expression
     aco << "POP BX\nPOP AX\nCWD ; line " << yylineno << " MULOP\n";
     switch($2[0]){
         case '*':
-            aco << "MUL BX\nPUSH AX\n";
+            aco << "IMUL BX\nPUSH AX\n";
             break;
         case '/':
-            aco << "DIV BX\nPUSH AX\n";
+            aco << "IDIV BX\nPUSH AX\n";
             break;
         case '%':
-            aco << "DIV BX\nPUSH DX\n";
+            aco << "NOP\n";
+            aco << "IDIV BX\nPUSH DX\n";
             break;
     }
     delete $1;
@@ -1333,6 +1334,5 @@ main(int argc, char* argv[])
     plo.close();
     peo.close();
     aco.close();
-    peep_optimize();
     exit(0);
 }

@@ -20,3 +20,4 @@ echo "Optimization complete! Cleaning up...🧹"
 rm -f optimize
 ./cleaner.sh
 echo "Please refer to code.asm and optimized_code.asm 🍔"
+echo "Further optimized code is in final_code.asm 👾"

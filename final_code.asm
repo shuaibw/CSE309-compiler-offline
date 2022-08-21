@@ -11,13 +11,9 @@ PUSH 0 ; line 2 declare variable k, offset: 2
 PUSH 5
 POP AX
 MOV [BP-2], AX ; line 3: k assigned
-; PEEP --> PUSH AX ; k=5 expression stored
-; PEEP --> POP AX ; expression end
 @L1: ; while condition check label
-PUSH [BP-2] ; k pushed in stack 
-PUSH 0
-POP BX ; line 4 relop 
-POP AX
+MOV BX, 0
+MOV AX, [BP-2]
 CMP AX, BX
 JG @L4
 PUSH 0
@@ -38,16 +34,11 @@ DEC WORD PTR[BP-2]
 POP AX ; expression end
 JMP @L1
 @L3: ; while exit label
-PUSH 3
-PUSH [BP--10] ; a pushed in stack 
-POP BX
-POP AX
+MOV BX, [BP--10]
+MOV AX, 3
 CWD ; line 8 MULOP
 IMUL BX
-PUSH AX
-PUSH 7
-POP BX
-POP AX
+MOV BX, 7
 SUB AX, BX
 PUSH AX
 POP DX ; save return value in dx
@@ -55,8 +46,6 @@ JMP @L0
 PUSH 9
 POP AX
 MOV [BP--10], AX ; line 9: a assigned
-; PEEP --> PUSH AX ; a=9 expression stored
-; PEEP --> POP AX ; expression end
 @L0: ; to handle recursion
 MOV SP, BP ; restore stack pointer
 POP BP
@@ -76,31 +65,18 @@ PUSH 0 ; line 14 declare variable x, offset: 2
 PUSH 0 ; line 14 declare variable i, offset: 4
 PUSH [BP--12] ; a pushed in stack 
 CALL f ; line 15 , function call
-PUSH DX ; return value pushed
-PUSH [BP--12] ; a pushed in stack 
-POP BX
-POP AX
+MOV BX, [BP--12]
+MOV AX, DX
 ADD AX, BX
-PUSH AX
-PUSH [BP--10] ; b pushed in stack 
-POP BX
-POP AX
+MOV BX, [BP--10]
 ADD AX, BX
-; PEEP --> PUSH AX
-; PEEP --> POP AX
 MOV [BP-2], AX ; line 15: x assigned
-; PEEP --> PUSH AX ; x=f(a)+a+b expression stored
-; PEEP --> POP AX ; expression end
 PUSH 0
 POP AX
 MOV [BP-4], AX ; line 17: i assigned
-; PEEP --> PUSH AX ; i=0 expression stored
-; PEEP --> POP AX ; expression end
 @L7: ; condition check label
-PUSH [BP-4] ; i pushed in stack 
-PUSH 7
-POP BX ; line 17 relop 
-POP AX
+MOV BX, 7
+MOV AX, [BP-4]
 CMP AX, BX
 JL @L11
 PUSH 0
@@ -118,17 +94,13 @@ INC WORD PTR[BP-4]
 POP AX ; pop update expression
 JMP @L7 ; check if condition holds
 @L8: ; for body label
-PUSH [BP-4] ; i pushed in stack 
-PUSH 3
-POP BX
-POP AX
+MOV BX, 3
+MOV AX, [BP-4]
 CWD ; line 18 MULOP
 NOP
 IDIV BX
-PUSH DX
-PUSH 0
-POP BX ; line 18 relop 
-POP AX
+MOV BX, 0
+MOV AX, DX
 CMP AX, BX
 JE @L13
 PUSH 0
@@ -139,28 +111,16 @@ PUSH 1
 POP AX
 CMP AX, 0
 JE @L15
-PUSH [BP-2] ; x pushed in stack 
-PUSH 5
-POP BX
-POP AX
+MOV BX, 5
+MOV AX, [BP-2]
 ADD AX, BX
-; PEEP --> PUSH AX
-; PEEP --> POP AX
 MOV [BP-2], AX ; line 19: x assigned
-; PEEP --> PUSH AX ; x=x+5 expression stored
-; PEEP --> POP AX ; expression end
 JMP @L16
 @L15: ; else block 
-PUSH [BP-2] ; x pushed in stack 
-PUSH 1
-POP BX
-POP AX
+MOV BX, 1
+MOV AX, [BP-2]
 SUB AX, BX
-; PEEP --> PUSH AX
-; PEEP --> POP AX
 MOV [BP-2], AX ; line 22: x assigned
-; PEEP --> PUSH AX ; x=x-1 expression stored
-; PEEP --> POP AX ; expression end
 @L16:
 JMP @L9
 @L10:
@@ -185,33 +145,22 @@ PUSH 0 ; line 30 declare variable i, offset: 6
 PUSH 1
 POP AX
 MOV [BP-2], AX ; line 31: a assigned
-; PEEP --> PUSH AX ; a=1 expression stored
-; PEEP --> POP AX ; expression end
 PUSH 2
 POP AX
 MOV [BP-4], AX ; line 32: b assigned
-; PEEP --> PUSH AX ; b=2 expression stored
-; PEEP --> POP AX ; expression end
 PUSH [BP-2] ; a pushed in stack 
 PUSH [BP-4] ; b pushed in stack 
 CALL g ; line 33 , function call
 PUSH DX ; return value pushed
 POP AX
 MOV [BP-2], AX ; line 33: a assigned
-; PEEP --> PUSH AX ; a=g(a,b) expression stored
-; PEEP --> POP AX ; expression end
-MOV AX, [BP-2]
 CALL DAX ; line 34: printf(a)
 PUSH 0
 POP AX
 MOV [BP-6], AX ; line 35: i assigned
-; PEEP --> PUSH AX ; i=0 expression stored
-; PEEP --> POP AX ; expression end
 @L18: ; condition check label
-PUSH [BP-6] ; i pushed in stack 
-PUSH 4
-POP BX ; line 35 relop 
-POP AX
+MOV BX, 4
+MOV AX, [BP-6]
 CMP AX, BX
 JL @L22
 PUSH 0
@@ -232,13 +181,9 @@ JMP @L18 ; check if condition holds
 PUSH 3
 POP AX
 MOV [BP-2], AX ; line 36: a assigned
-; PEEP --> PUSH AX ; a=3 expression stored
-; PEEP --> POP AX ; expression end
 @L24: ; while condition check label
-PUSH [BP-2] ; a pushed in stack 
-PUSH 0
-POP BX ; line 37 relop 
-POP AX
+MOV BX, 0
+MOV AX, [BP-2]
 CMP AX, BX
 JG @L27
 PUSH 0
@@ -275,7 +220,6 @@ INT 21H
 main ENDP
 
 
-; HELPER MODULES
 DCHAR PROC          ; displays char stored in dl
     PUSH AX         ; save ax in stack
     MOV AH, 2

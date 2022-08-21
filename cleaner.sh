@@ -7,6 +7,7 @@ rm -f lex.yy.c
 rm -f 1805010.output
 # rm -f code.asm
 rm -f optimized_code_1.asm
+rm -f final_code_temp.asm
 # rm -f optimized_code.asm
 rm -f lexlog.txt
 rm -f lextok.txt
